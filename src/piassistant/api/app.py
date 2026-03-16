@@ -1,0 +1,37 @@
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
+from ..brain.agent import Agent
+from ..config import Settings
+from ..services.base import ServiceRegistry
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print(f"[*] Initializing services...")
+    await app.state.registry.initialize_all()
+    health = await app.state.registry.health_check_all()
+    for name, status in health.items():
+        marker = "+" if status["healthy"] else "-"
+        print(f"  [{marker}] {name}: {status['details']}")
+    print(f"[+] {app.state.settings.assistant_name} is ready")
+    yield
+    print("[*] Shutting down...")
+
+
+def create_app(registry: ServiceRegistry, agent: Agent, settings: Settings) -> FastAPI:
+    app = FastAPI(title=settings.assistant_name, version="0.1.0", lifespan=lifespan)
+    app.state.registry = registry
+    app.state.agent = agent
+    app.state.settings = settings
+
+    from .routes_assistant import router as assistant_router
+    from .routes_pico import router as pico_router
+    from .routes_health import router as health_router
+
+    app.include_router(assistant_router, prefix="/api")
+    app.include_router(pico_router, prefix="/api/pico")
+    app.include_router(health_router, prefix="/api")
+
+    return app
