@@ -6,8 +6,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     claude_model: str = "claude-sonnet-4-6"
 
-    # Weather (OpenWeatherMap)
-    openweathermap_api_key: str = ""
+    # Weather (Open-Meteo — no API key needed)
     default_location: str = "Idaho Falls, ID"
     default_lat: float = 43.49
     default_lon: float = -112.03

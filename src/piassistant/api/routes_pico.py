@@ -22,7 +22,7 @@ async def pico_weather(request: Request, lat: Optional[float] = None, lon: Optio
         "desc": data["description"],
         "hum": data["humidity"],
         "wind": data["wind_mph"],
-        "icon": data["icon"],
+        "wc": data["weather_code"],
         "loc": data["location"],
     }
 

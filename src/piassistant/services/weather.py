@@ -7,15 +7,29 @@ from .base import BaseService
 from .cache import CacheService
 
 
+# WMO Weather interpretation codes → description
+WMO_CODES = {
+    0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+    45: "Fog", 48: "Icy fog",
+    51: "Light drizzle", 53: "Drizzle", 55: "Heavy drizzle",
+    56: "Freezing drizzle", 57: "Heavy freezing drizzle",
+    61: "Light rain", 63: "Rain", 65: "Heavy rain",
+    66: "Freezing rain", 67: "Heavy freezing rain",
+    71: "Light snow", 73: "Snow", 75: "Heavy snow", 77: "Snow grains",
+    80: "Light showers", 81: "Showers", 82: "Heavy showers",
+    85: "Light snow showers", 86: "Heavy snow showers",
+    95: "Thunderstorm", 96: "Thunderstorm with hail", 99: "Heavy hail storm",
+}
+
+
 class WeatherService(BaseService):
-    """OpenWeatherMap weather data with cache-first fetching."""
+    """Open-Meteo weather data with cache-first fetching. No API key required."""
 
     name = "weather"
-    BASE_URL = "https://api.openweathermap.org/data/2.5"
-    GEO_URL = "https://api.openweathermap.org/geo/1.0/direct"
+    WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
+    GEO_URL = "https://geocoding-api.open-meteo.com/v1/search"
 
     def __init__(self, settings: Settings, cache: CacheService):
-        self.api_key = settings.openweathermap_api_key
         self.cache = cache
         self.ttl = settings.weather_cache_ttl
         self.default_lat = settings.default_lat
@@ -23,8 +37,8 @@ class WeatherService(BaseService):
         self.default_location = settings.default_location
         self._client = httpx.AsyncClient(timeout=10)
 
-    async def geocode(self, location: str) -> tuple[float, float]:
-        """Resolve a city name to lat/lon via OpenWeatherMap geocoding API."""
+    async def geocode(self, location: str) -> tuple[float, float, str]:
+        """Resolve a city name to (lat, lon, resolved_name) via Open-Meteo geocoding."""
         cache_key = f"geo:{location.lower()}"
         cached = await self.cache.get(cache_key)
         if cached:
@@ -32,21 +46,27 @@ class WeatherService(BaseService):
 
         resp = await self._client.get(
             self.GEO_URL,
-            params={"q": location, "limit": 1, "appid": self.api_key},
+            params={"name": location, "count": 1, "language": "en", "format": "json"},
         )
         resp.raise_for_status()
-        results = resp.json()
+        results = resp.json().get("results", [])
         if not results:
-            return self.default_lat, self.default_lon
+            return self.default_lat, self.default_lon, self.default_location
 
-        lat, lon = results[0]["lat"], results[0]["lon"]
-        await self.cache.set(cache_key, (lat, lon), ttl=86400)  # cache 24h
-        return lat, lon
+        r = results[0]
+        lat, lon = r["latitude"], r["longitude"]
+        name = r.get("name", location)
+        admin = r.get("admin1", "")
+        resolved = f"{name}, {admin}" if admin else name
+
+        await self.cache.set(cache_key, (lat, lon, resolved), ttl=86400)
+        return lat, lon, resolved
 
     async def get_current(self, lat: float | None = None, lon: float | None = None, location: str | None = None) -> dict:
         """Get current weather. Resolves location name if lat/lon not provided."""
+        resolved_name = location or self.default_location
         if location and (lat is None or lon is None):
-            lat, lon = await self.geocode(location)
+            lat, lon, resolved_name = await self.geocode(location)
         lat = lat or self.default_lat
         lon = lon or self.default_lon
 
@@ -56,20 +76,26 @@ class WeatherService(BaseService):
             return cached
 
         resp = await self._client.get(
-            f"{self.BASE_URL}/weather",
-            params={"lat": lat, "lon": lon, "appid": self.api_key, "units": "imperial"},
+            self.WEATHER_URL,
+            params={
+                "latitude": lat,
+                "longitude": lon,
+                "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m",
+                "temperature_unit": "fahrenheit",
+                "wind_speed_unit": "mph",
+            },
         )
         resp.raise_for_status()
-        raw = resp.json()
+        current = resp.json().get("current", {})
 
         data = {
-            "temp_f": raw["main"]["temp"],
-            "feels_like_f": raw["main"]["feels_like"],
-            "description": raw["weather"][0]["description"],
-            "humidity": raw["main"]["humidity"],
-            "wind_mph": raw["wind"]["speed"],
-            "icon": raw["weather"][0]["icon"],
-            "location": raw.get("name", location or self.default_location),
+            "temp_f": current.get("temperature_2m"),
+            "feels_like_f": current.get("apparent_temperature"),
+            "description": WMO_CODES.get(current.get("weather_code", 0), "Unknown"),
+            "humidity": current.get("relative_humidity_2m"),
+            "wind_mph": current.get("wind_speed_10m"),
+            "weather_code": current.get("weather_code", 0),
+            "location": resolved_name,
             "lat": lat,
             "lon": lon,
         }
@@ -77,9 +103,10 @@ class WeatherService(BaseService):
         return data
 
     async def get_forecast(self, lat: float | None = None, lon: float | None = None, location: str | None = None, days: int = 3) -> list[dict]:
-        """Get weather forecast. Returns list of forecast entries."""
+        """Get daily weather forecast."""
+        resolved_name = location or self.default_location
         if location and (lat is None or lon is None):
-            lat, lon = await self.geocode(location)
+            lat, lon, resolved_name = await self.geocode(location)
         lat = lat or self.default_lat
         lon = lon or self.default_lon
 
@@ -89,27 +116,33 @@ class WeatherService(BaseService):
             return cached
 
         resp = await self._client.get(
-            f"{self.BASE_URL}/forecast",
-            params={"lat": lat, "lon": lon, "appid": self.api_key, "units": "imperial", "cnt": days * 8},
+            self.WEATHER_URL,
+            params={
+                "latitude": lat,
+                "longitude": lon,
+                "daily": "temperature_2m_max,temperature_2m_min,weather_code,wind_speed_10m_max,precipitation_probability_max",
+                "temperature_unit": "fahrenheit",
+                "wind_speed_unit": "mph",
+                "forecast_days": days,
+            },
         )
         resp.raise_for_status()
-        raw = resp.json()
+        daily = resp.json().get("daily", {})
 
         forecasts = []
-        for entry in raw.get("list", []):
+        dates = daily.get("time", [])
+        for i, date in enumerate(dates):
             forecasts.append({
-                "dt": entry["dt"],
-                "dt_txt": entry["dt_txt"],
-                "temp_f": entry["main"]["temp"],
-                "description": entry["weather"][0]["description"],
-                "humidity": entry["main"]["humidity"],
-                "wind_mph": entry["wind"]["speed"],
-                "icon": entry["weather"][0]["icon"],
+                "date": date,
+                "temp_max_f": daily["temperature_2m_max"][i],
+                "temp_min_f": daily["temperature_2m_min"][i],
+                "description": WMO_CODES.get(daily["weather_code"][i], "Unknown"),
+                "wind_max_mph": daily["wind_speed_10m_max"][i],
+                "precip_chance": daily["precipitation_probability_max"][i],
+                "location": resolved_name,
             })
         await self.cache.set(cache_key, forecasts, self.ttl)
         return forecasts
 
     async def health_check(self) -> dict:
-        if not self.api_key:
-            return {"healthy": False, "details": "No OpenWeatherMap API key"}
-        return {"healthy": True, "details": "OpenWeatherMap configured"}
+        return {"healthy": True, "details": "Open-Meteo (no key required)"}

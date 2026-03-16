@@ -13,7 +13,6 @@ from piassistant.services.llm import LLMService
 def settings():
     return Settings(
         anthropic_api_key="test-key",
-        openweathermap_api_key="test-key",
         newsapi_key="test-key",
     )
 

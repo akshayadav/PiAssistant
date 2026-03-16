@@ -53,7 +53,7 @@ The service abstraction makes this a config/deployment change, not a rewrite. Ma
 | LLM | Claude API only (for now) | Start simple, add local LLM fallback later |
 | Stack | Python + FastAPI | Best for Pi/Jetson hardware, async, matches MicroPython on Picos |
 | Interfaces | Terminal (full), Voice (common), Web UI | Terminal first; voice + web deferred |
-| Data sources | Free APIs (OpenWeatherMap, NewsAPI) | Web scraping added later |
+| Data sources | Free APIs (Open-Meteo, NewsAPI) | Open-Meteo needs no key; web scraping added later |
 | Pico W comms | HTTP now, MQTT later | Pi caches data, serves Picos — one API fetch serves all |
 | Pi role | Mothership — gateway, cache, orchestrator | Minimizes API calls, centralizes data |
 
@@ -76,7 +76,7 @@ PiAssistant/
 │       │   ├── base.py       # BaseService ABC + ServiceRegistry
 │       │   ├── cache.py      # TTL in-memory cache
 │       │   ├── llm.py        # Claude API wrapper (Anthropic SDK)
-│       │   ├── weather.py    # OpenWeatherMap (cache-first)
+│       │   ├── weather.py    # Open-Meteo (cache-first, no API key)
 │       │   └── news.py       # NewsAPI.org (cache-first)
 │       ├── brain/
 │       │   ├── agent.py      # Tool-use loop: user msg → Claude → tools → response

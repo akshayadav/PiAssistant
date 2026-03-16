@@ -14,7 +14,6 @@ from piassistant.services.cache import CacheService
 def settings():
     return Settings(
         anthropic_api_key="test",
-        openweathermap_api_key="test",
         newsapi_key="test",
     )
 
