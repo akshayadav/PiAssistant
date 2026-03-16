@@ -119,6 +119,33 @@ WeatherService and NewsService: check in-memory TTL cache → if miss, fetch fro
 
 The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI can run from any machine on the network, and the same brain logic serves CLI, Pico W, and future web UI.
 
+## Progress & Roadmap
+
+### Completed
+- [x] Project groundwork: git, CLAUDE.md, memory files, MCP servers, scaffold
+- [x] Service layer: BaseService, ServiceRegistry, CacheService, LLMService, WeatherService, NewsService
+- [x] Brain: Claude tool-use loop with 4 tools (weather, forecast, headlines, news search)
+- [x] FastAPI server: /api/chat, /api/pico/*, /api/health
+- [x] CLI REPL
+- [x] Switched weather from OpenWeatherMap to Open-Meteo (no API key, better data)
+- [x] 18 tests passing
+- [x] GitHub repo created
+- [x] Homebrew + gh CLI installed on dev Mac
+
+### Up Next (in priority order)
+1. **Deploy to Pi 5** — clone repo, install deps, run as systemd service
+2. **Connect PicoWeather** — point it at Pi instead of Open-Meteo directly (proves mothership pattern)
+3. **Web dashboard** — simple HTML chat page accessible from any device on network
+4. **Voice (STT/TTS)** — hands-free interaction, offloaded to Mac Mini
+5. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
+
+### Future
+- Local LLM fallback (Ollama on Mac Mini)
+- AI camera hat integration
+- Motors/servos for arms/wheels
+- Jetson Nano/Orin migration
+- Web scraping as alternative data source
+
 ## Build & Run Commands
 
 ```bash
@@ -129,10 +156,10 @@ pip install -e ".[dev]"
 cp .env.example .env   # then edit with real API keys
 
 # Run server
-python -m piassistant.main
+python -m piassistant
 
 # Run CLI (separate terminal, talks to server)
-python -m piassistant.main cli
+python -m piassistant cli
 
 # Run tests
 pytest tests/
