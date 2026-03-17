@@ -21,6 +21,20 @@ WMO_CODES = {
     95: "Thunderstorm", 96: "Thunderstorm with hail", 99: "Heavy hail storm",
 }
 
+# WMO codes → icon keys (matching PicoWeather's expected values)
+WMO_ICONS = {
+    0: "clear", 1: "clear", 2: "cloudy", 3: "overcast",
+    45: "fog", 48: "fog",
+    51: "drizzle", 53: "drizzle", 55: "drizzle",
+    56: "drizzle", 57: "drizzle",
+    61: "rain", 63: "rain", 65: "rain",
+    66: "rain", 67: "rain",
+    71: "snow", 73: "snow", 75: "snow", 77: "snow",
+    80: "rain", 81: "rain", 82: "rain",
+    85: "snow", 86: "snow",
+    95: "storm", 96: "storm", 99: "storm",
+}
+
 
 class WeatherService(BaseService):
     """Open-Meteo weather data with cache-first fetching. No API key required."""
@@ -88,13 +102,15 @@ class WeatherService(BaseService):
         resp.raise_for_status()
         current = resp.json().get("current", {})
 
+        wmo_code = current.get("weather_code", 0)
         data = {
             "temp_f": current.get("temperature_2m"),
             "feels_like_f": current.get("apparent_temperature"),
-            "description": WMO_CODES.get(current.get("weather_code", 0), "Unknown"),
+            "description": WMO_CODES.get(wmo_code, "Unknown"),
+            "icon": WMO_ICONS.get(wmo_code, "clear"),
             "humidity": current.get("relative_humidity_2m"),
             "wind_mph": current.get("wind_speed_10m"),
-            "weather_code": current.get("weather_code", 0),
+            "weather_code": wmo_code,
             "location": resolved_name,
             "lat": lat,
             "lon": lon,
