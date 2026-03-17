@@ -44,7 +44,7 @@ If you prefer step-by-step:
 
 ```bash
 sudo apt update && sudo apt full-upgrade -y
-sudo apt install -y git python3-venv python3-pip mosquitto mosquitto-clients
+sudo apt install -y git python3-venv python3-pip mosquitto mosquitto-clients cage chromium
 ```
 
 ### 2. Mosquitto
@@ -85,7 +85,27 @@ sudo systemctl enable piassistant
 sudo systemctl start piassistant
 ```
 
-### 6. Tailscale (optional, for remote access)
+### 6. Kiosk display (Cage + Chromium)
+
+Displays the web dashboard fullscreen on an HDMI-connected monitor. Uses Cage (minimal Wayland compositor) instead of a full desktop environment (~100-150 MB vs ~350 MB RAM).
+
+```bash
+# Replace <username> and <uid> with your Pi username and UID (id -u)
+sed "s/%i/<username>/g; s/%U/<uid>/g" deploy/piassistant-kiosk.service | sudo tee /etc/systemd/system/piassistant-kiosk.service
+sudo systemctl daemon-reload
+sudo systemctl enable piassistant-kiosk
+sudo systemctl start piassistant-kiosk
+```
+
+Manage the kiosk:
+
+```bash
+sudo systemctl status piassistant-kiosk    # Check status
+sudo systemctl restart piassistant-kiosk   # Restart
+sudo systemctl stop piassistant-kiosk      # Stop (returns to console)
+```
+
+### 7. Tailscale (optional, for remote access)
 
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
@@ -126,3 +146,4 @@ PIASSISTANT_URL=http://<tailscale-ip>:8000 python -m piassistant cli
 - [ ] Mosquitto accepts connections on port 1883
 - [ ] Service auto-restarts after kill
 - [ ] Service starts on boot after reboot
+- [ ] Kiosk display shows dashboard on HDMI monitor

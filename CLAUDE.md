@@ -149,10 +149,11 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Pi 5 deployment: systemd service, Mosquitto config, setup script, CLI remote URL support
 - [x] Connect PicoWeather to mothership: `/api/pico/weather?units=metric`, PicoWeather tries Pi first with Open-Meteo fallback
 - [x] Web dashboard: single-page chat UI at `/` with weather bar, dark theme, responsive
+- [x] Pi 5 deployed: repo cloned, venv, systemd service running, all endpoints verified
+- [x] Kiosk display: Cage + Chromium fullscreen dashboard on HDMI
 
 ### Up Next (in priority order)
-1. **Kiosk display** — Cage + Chromium on Pi, fullscreen dashboard on HDMI display (depends on web dashboard)
-4. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
+1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
 5. **Voice (STT/TTS)** — hands-free interaction, offloaded to Mac Mini
 6. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
 
@@ -210,6 +211,7 @@ See [deploy/README.md](deploy/README.md) for full instructions. Key files:
 | `deploy/setup.sh` | One-script Pi setup (apt, venv, systemd install) |
 | `deploy/piassistant.service` | systemd unit file |
 | `deploy/mosquitto.conf` | MQTT broker config for Pico W access |
+| `deploy/piassistant-kiosk.service` | Cage + Chromium kiosk display unit |
 
 ```bash
 # Quick deploy (on Pi)

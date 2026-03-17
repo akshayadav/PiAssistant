@@ -16,7 +16,7 @@ echo ">> Updating system..."
 sudo apt update && sudo apt full-upgrade -y
 
 echo ">> Installing dependencies..."
-sudo apt install -y git python3-venv python3-pip mosquitto mosquitto-clients
+sudo apt install -y git python3-venv python3-pip mosquitto mosquitto-clients cage chromium
 
 # --- Mosquitto ---
 echo ">> Configuring Mosquitto..."
@@ -51,12 +51,14 @@ else
     echo ">> .env already exists, skipping."
 fi
 
-# --- systemd service ---
-echo ">> Installing systemd service..."
-# Replace %i with actual username in the service file
+# --- systemd services ---
+echo ">> Installing systemd services..."
+# Replace %i with actual username and %U with UID in service files
 sed "s/%i/$USER/g" deploy/piassistant.service | sudo tee /etc/systemd/system/${SERVICE_NAME}.service > /dev/null
+sed "s/%i/$USER/g; s/%U/$(id -u)/g" deploy/piassistant-kiosk.service | sudo tee /etc/systemd/system/${SERVICE_NAME}-kiosk.service > /dev/null
 sudo systemctl daemon-reload
 sudo systemctl enable "$SERVICE_NAME"
+sudo systemctl enable "${SERVICE_NAME}-kiosk"
 
 echo ""
 echo "=== Setup complete! ==="

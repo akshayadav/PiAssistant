@@ -1,0 +1,16 @@
+[Unit]
+Description=PiAssistant Kiosk Display
+After=piassistant.service
+Wants=piassistant.service
+
+[Service]
+Type=simple
+User=%i
+Environment=WLR_LIBINPUT_NO_DEVICES=1
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+ExecStart=/usr/bin/cage -s -- /usr/bin/chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --enable-features=OverlayScrollbar --disable-translate http://localhost:8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
