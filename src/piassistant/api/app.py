@@ -1,10 +1,14 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 
 from ..brain.agent import Agent
 from ..config import Settings
 from ..services.base import ServiceRegistry
+
+STATIC_DIR = Path(__file__).parent.parent / "static"
 
 
 @asynccontextmanager
@@ -33,5 +37,9 @@ def create_app(registry: ServiceRegistry, agent: Agent, settings: Settings) -> F
     app.include_router(assistant_router, prefix="/api")
     app.include_router(pico_router, prefix="/api/pico")
     app.include_router(health_router, prefix="/api")
+
+    @app.get("/")
+    async def dashboard():
+        return FileResponse(STATIC_DIR / "index.html")
 
     return app

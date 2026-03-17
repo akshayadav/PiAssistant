@@ -45,6 +45,19 @@ When migrating from Pi 5 to Jetson Orin Nano:
 
 The service abstraction makes this a config/deployment change, not a rewrite. Mac Mini becomes optional on Jetson Orin.
 
+### Decision: Pi 5 Setup
+
+| Decision | Choice | Rationale |
+|---|---|---|
+| OS | Pi OS Lite 64-bit (Bookworm) | ~50 MB idle RAM vs ~350 MB for Desktop; camera/GPIO work the same; display via kiosk browser instead of full DE |
+| Display | Cage + Chromium kiosk (not Desktop DE) | ~100-150 MB vs ~350 MB; fullscreen web dashboard serves Pi display, phone, and Mac from same FastAPI server |
+| SSH auth | Public key (ed25519) | More secure, no password to type; Imager injects key during flash |
+| Remote access | Tailscale (not Raspberry Pi Connect) | Mesh VPN works from anywhere; direct peer-to-peer (faster than relay); covers all devices (Pi, Mac Mini, laptop) without a Raspberry Pi account |
+| Python env | venv (not Docker) | Simpler, less RAM overhead, fast iteration; Docker later if needed |
+| MQTT broker | Mosquitto | Lightweight, ready for Pico W push |
+| Auto-start | systemd service | Standard, reliable, auto-restart on crash |
+| Log storage | USB external drive (/mnt/usblog) | Persistent archive beyond SD card, removable for analysis; fstab with nofail so Pi boots without it |
+
 ### Key Decisions Summary
 
 | Decision | Choice | Rationale |
@@ -86,6 +99,8 @@ PiAssistant/
 │       │   ├── routes_assistant.py  # /api/chat — human interaction
 │       │   ├── routes_pico.py       # /api/pico/* — compact JSON for Pico Ws
 │       │   └── routes_health.py     # /api/health — diagnostics
+│       ├── static/
+│       │   └── index.html           # Web dashboard (chat + weather)
 │       └── cli/
 │           └── repl.py       # Interactive terminal REPL
 └── tests/
@@ -131,13 +146,15 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] 18 tests passing
 - [x] GitHub repo created
 - [x] Homebrew + gh CLI installed on dev Mac
+- [x] Pi 5 deployment: systemd service, Mosquitto config, setup script, CLI remote URL support
+- [x] Connect PicoWeather to mothership: `/api/pico/weather?units=metric`, PicoWeather tries Pi first with Open-Meteo fallback
+- [x] Web dashboard: single-page chat UI at `/` with weather bar, dark theme, responsive
 
 ### Up Next (in priority order)
-1. **Deploy to Pi 5** — clone repo, install deps, run as systemd service
-2. **Connect PicoWeather** — point it at Pi instead of Open-Meteo directly (proves mothership pattern)
-3. **Web dashboard** — simple HTML chat page accessible from any device on network
-4. **Voice (STT/TTS)** — hands-free interaction, offloaded to Mac Mini
-5. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
+1. **Kiosk display** — Cage + Chromium on Pi, fullscreen dashboard on HDMI display (depends on web dashboard)
+4. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
+5. **Voice (STT/TTS)** — hands-free interaction, offloaded to Mac Mini
+6. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
 
 ### Future
 - Local LLM fallback (Ollama on Mac Mini)
@@ -161,6 +178,10 @@ python -m piassistant
 # Run CLI (separate terminal, talks to server)
 python -m piassistant cli
 
+# Run CLI pointing at remote Pi
+python -m piassistant cli http://piassistant.local:8000
+# Or: PIASSISTANT_URL=http://piassistant.local:8000 python -m piassistant cli
+
 # Run tests
 pytest tests/
 
@@ -171,6 +192,32 @@ curl -X POST http://localhost:8000/api/chat \
   -H "Content-Type: application/json" \
   -d '{"message": "What is the weather in New York?"}'
 ```
+
+## Pi 5 Deployment
+
+**OS**: Raspberry Pi OS Lite 64-bit (Bookworm) — lowest RAM overhead, best Pi 5 hardware support.
+
+See [deploy/README.md](deploy/README.md) for full instructions. Key files:
+
+| File | Purpose |
+|---|---|
+| `deploy/setup.sh` | One-script Pi setup (apt, venv, systemd install) |
+| `deploy/piassistant.service` | systemd unit file |
+| `deploy/mosquitto.conf` | MQTT broker config for Pico W access |
+
+```bash
+# Quick deploy (on Pi)
+git clone <repo-url> ~/PiAssistant && cd ~/PiAssistant
+bash deploy/setup.sh
+nano .env  # add API keys
+sudo systemctl start piassistant
+
+# Manage
+sudo systemctl status piassistant
+journalctl -u piassistant -f
+```
+
+**Tailscale** provides secure remote access from anywhere: `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`
 
 ## MCP Servers
 
