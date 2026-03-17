@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     weather_cache_ttl: int = 900   # 15 minutes
     news_cache_ttl: int = 1800     # 30 minutes
 
+    # Database
+    db_path: str = "data/piassistant.db"
+
     # Assistant
     assistant_name: str = "PiAssistant"
 

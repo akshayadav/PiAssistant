@@ -4,154 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PiAssistant</title>
-<style>
-  :root {
-    --bg: #1a1a2e;
-    --surface: #16213e;
-    --surface2: #0f3460;
-    --accent: #e94560;
-    --text: #eee;
-    --text-muted: #999;
-    --user-bg: #0f3460;
-    --bot-bg: #1a1a3e;
-    --radius: 12px;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Header */
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    background: var(--surface);
-    border-bottom: 1px solid #ffffff10;
-    flex-shrink: 0;
-  }
-  header h1 { font-size: 1.1rem; font-weight: 600; }
-  .status { font-size: 0.75rem; color: var(--text-muted); }
-  .status.online { color: #4ade80; }
-  .header-actions { display: flex; gap: 8px; }
-  .header-actions button {
-    background: var(--surface2);
-    border: none;
-    color: var(--text-muted);
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.8rem;
-  }
-  .header-actions button:hover { color: var(--text); }
-
-  /* Weather bar */
-  #weather-bar {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 8px 16px;
-    background: var(--surface);
-    border-bottom: 1px solid #ffffff10;
-    font-size: 0.85rem;
-    flex-shrink: 0;
-    overflow-x: auto;
-  }
-  .weather-item { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-  .weather-item .label { color: var(--text-muted); }
-  .weather-item .value { font-weight: 500; }
-
-  /* Messages */
-  #messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .msg {
-    max-width: 85%;
-    padding: 10px 14px;
-    border-radius: var(--radius);
-    line-height: 1.5;
-    white-space: pre-wrap;
-    word-break: break-word;
-    font-size: 0.95rem;
-  }
-  .msg.user {
-    align-self: flex-end;
-    background: var(--user-bg);
-    border-bottom-right-radius: 4px;
-  }
-  .msg.bot {
-    align-self: flex-start;
-    background: var(--bot-bg);
-    border-bottom-left-radius: 4px;
-  }
-  .msg.error { color: var(--accent); }
-  .msg .sender {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    margin-bottom: 4px;
-  }
-
-  /* Thinking indicator */
-  .thinking { color: var(--text-muted); font-style: italic; }
-  .thinking::after {
-    content: "";
-    animation: dots 1.5s infinite;
-  }
-  @keyframes dots {
-    0%, 20% { content: ""; }
-    40% { content: "."; }
-    60% { content: ".."; }
-    80%, 100% { content: "..."; }
-  }
-
-  /* Input area */
-  #input-area {
-    display: flex;
-    gap: 8px;
-    padding: 12px 16px;
-    background: var(--surface);
-    border-top: 1px solid #ffffff10;
-    flex-shrink: 0;
-  }
-  #msg-input {
-    flex: 1;
-    padding: 10px 14px;
-    background: var(--bg);
-    border: 1px solid #ffffff20;
-    border-radius: var(--radius);
-    color: var(--text);
-    font-size: 1rem;
-    font-family: inherit;
-    resize: none;
-    min-height: 44px;
-    max-height: 120px;
-  }
-  #msg-input:focus { outline: none; border-color: var(--accent); }
-  #send-btn {
-    padding: 10px 20px;
-    background: var(--accent);
-    border: none;
-    border-radius: var(--radius);
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-    font-weight: 500;
-    align-self: flex-end;
-  }
-  #send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  #send-btn:hover:not(:disabled) { filter: brightness(1.1); }
-</style>
+<link rel="stylesheet" href="/static/css/dashboard.css">
 </head>
 <body>
 
@@ -162,171 +15,69 @@
   </div>
   <div class="header-actions">
     <button onclick="resetChat()">New Chat</button>
-    <button onclick="shutdownPi()" style="color:#e94560">Shutdown</button>
+    <button onclick="shutdownPi()" style="color:var(--accent)">Shutdown</button>
   </div>
 </header>
 
-<div id="weather-bar">
-  <span class="weather-item"><span class="label">Loading weather...</span></span>
+<div id="widgets">
+  <!-- Weather -->
+  <div class="widget" id="weather-widget">
+    <h2>Weather</h2>
+    <div id="weather-content"><div class="empty-state">Loading...</div></div>
+  </div>
+
+  <!-- Sessions -->
+  <div class="widget" id="sessions-widget">
+    <h2>Claude Code <span class="count" id="sessions-count">0</span></h2>
+    <div id="sessions-content"><div class="empty-state">No active sessions</div></div>
+  </div>
+
+  <!-- Timers -->
+  <div class="widget" id="timers-widget">
+    <h2>Timers <span class="count" id="timers-count">0</span></h2>
+    <div id="timers-content"><div class="empty-state">No active timers</div></div>
+  </div>
+
+  <!-- Reminders -->
+  <div class="widget" id="reminders-widget">
+    <h2>Reminders <span class="count" id="reminders-count">0</span></h2>
+    <div id="reminders-content"><div class="empty-state">No reminders</div></div>
+  </div>
+
+  <!-- Grocery -->
+  <div class="widget" id="grocery-widget" style="grid-column: span 2">
+    <h2>Grocery <span class="count" id="grocery-count">0</span></h2>
+    <div id="grocery-content"><div class="empty-state">Grocery list empty</div></div>
+  </div>
+
+  <!-- Notes -->
+  <div class="widget" id="notes-widget">
+    <h2>Notes</h2>
+    <div id="notes-content"><div class="empty-state">No notes</div></div>
+  </div>
+
+  <!-- Todos -->
+  <div class="widget" id="todos-widget">
+    <h2>To-Do <span class="count" id="todos-count">0</span></h2>
+    <div id="todos-content"><div class="empty-state">No to-dos</div></div>
+  </div>
 </div>
 
-<div id="messages"></div>
-
-<div id="input-area">
-  <textarea id="msg-input" rows="1" placeholder="Ask me anything..." autofocus></textarea>
-  <button id="send-btn" onclick="sendMessage()">Send</button>
+<div id="chat-area">
+  <div id="messages"></div>
+  <div id="input-area">
+    <textarea id="msg-input" rows="1" placeholder="Ask me anything..." autofocus></textarea>
+    <button id="send-btn" onclick="sendMessage()">Send</button>
+  </div>
 </div>
 
-<script>
-const messages = document.getElementById("messages");
-const input = document.getElementById("msg-input");
-const sendBtn = document.getElementById("send-btn");
-const statusEl = document.getElementById("status");
-const weatherBar = document.getElementById("weather-bar");
+<!-- Timer alert overlay -->
+<div id="timer-alert">
+  <div id="timer-alert-text"></div>
+  <button onclick="dismissTimerAlert()">Dismiss</button>
+</div>
 
-let sending = false;
-
-// Auto-resize textarea
-input.addEventListener("input", () => {
-  input.style.height = "auto";
-  input.style.height = Math.min(input.scrollHeight, 120) + "px";
-});
-
-// Enter to send, Shift+Enter for newline
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});
-
-function addMessage(text, role) {
-  const div = document.createElement("div");
-  div.className = `msg ${role}`;
-  const sender = document.createElement("div");
-  sender.className = "sender";
-  sender.textContent = role === "user" ? "You" : "PiAssistant";
-  div.appendChild(sender);
-  const body = document.createElement("div");
-  body.textContent = text;
-  div.appendChild(body);
-  messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
-  return div;
-}
-
-function addThinking() {
-  const div = document.createElement("div");
-  div.className = "msg bot thinking";
-  div.id = "thinking";
-  const sender = document.createElement("div");
-  sender.className = "sender";
-  sender.textContent = "PiAssistant";
-  div.appendChild(sender);
-  const body = document.createElement("span");
-  body.textContent = "Thinking";
-  div.appendChild(body);
-  messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
-  return div;
-}
-
-function removeThinking() {
-  const el = document.getElementById("thinking");
-  if (el) el.remove();
-}
-
-async function sendMessage() {
-  const text = input.value.trim();
-  if (!text || sending) return;
-
-  sending = true;
-  sendBtn.disabled = true;
-  input.value = "";
-  input.style.height = "auto";
-
-  addMessage(text, "user");
-  addThinking();
-
-  try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text }),
-    });
-    removeThinking();
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    addMessage(data.response, "bot");
-  } catch (err) {
-    removeThinking();
-    addMessage(`Error: ${err.message}`, "bot error");
-  } finally {
-    sending = false;
-    sendBtn.disabled = false;
-    input.focus();
-  }
-}
-
-async function resetChat() {
-  try {
-    await fetch("/api/reset", { method: "POST" });
-    messages.innerHTML = "";
-    addMessage("Chat reset. How can I help you?", "bot");
-  } catch (err) {
-    addMessage(`Reset failed: ${err.message}`, "bot error");
-  }
-}
-
-async function checkHealth() {
-  try {
-    const res = await fetch("/api/health");
-    const data = await res.json();
-    statusEl.textContent = data.status === "ok" ? "online" : "degraded";
-    statusEl.className = "status " + (data.status === "ok" ? "online" : "");
-  } catch {
-    statusEl.textContent = "offline";
-    statusEl.className = "status";
-  }
-}
-
-async function fetchWeather() {
-  try {
-    const res = await fetch("/api/pico/weather");
-    if (!res.ok) throw new Error();
-    const w = await res.json();
-    weatherBar.innerHTML = `
-      <span class="weather-item"><span class="value">${w.loc}</span></span>
-      <span class="weather-item"><span class="label">Temp</span> <span class="value">${w.temp}°F</span></span>
-      <span class="weather-item"><span class="label">Feels</span> <span class="value">${w.feel}°F</span></span>
-      <span class="weather-item"><span class="label">Wind</span> <span class="value">${w.wind} mph</span></span>
-      <span class="weather-item"><span class="label">Humidity</span> <span class="value">${w.hum}%</span></span>
-      <span class="weather-item"><span class="value">${w.desc}</span></span>
-    `;
-  } catch {
-    weatherBar.innerHTML = '<span class="weather-item"><span class="label">Weather unavailable</span></span>';
-  }
-}
-
-async function shutdownPi() {
-  if (!confirm("Shut down the Raspberry Pi?")) return;
-  try {
-    await fetch("/api/shutdown", { method: "POST" });
-    addMessage("Shutting down... Safe to unplug in 10 seconds.", "bot");
-    statusEl.textContent = "shutting down";
-    statusEl.className = "status";
-  } catch (err) {
-    addMessage(`Shutdown failed: ${err.message}`, "bot error");
-  }
-}
-
-// Init
-checkHealth();
-fetchWeather();
-setInterval(checkHealth, 30000);
-setInterval(fetchWeather, 300000); // 5 min
-</script>
+<script src="/static/js/dashboard.js"></script>
 
 </body>
 </html>

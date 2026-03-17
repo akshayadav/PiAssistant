@@ -9,6 +9,11 @@ from .services.cache import CacheService
 from .services.llm import LLMService
 from .services.weather import WeatherService
 from .services.news import NewsService
+from .services.storage import StorageService
+from .services.grocery import GroceryService
+from .services.timers import TimerService
+from .services.reminders import ReminderService
+from .services.todo import TodoService
 from .brain.agent import Agent
 from .api.app import create_app
 
@@ -21,6 +26,11 @@ def run_server():
     llm = LLMService(settings)
     weather = WeatherService(settings, cache)
     news = NewsService(settings, cache)
+    storage = StorageService(settings)
+    grocery = GroceryService(storage)
+    timers = TimerService()
+    reminders = ReminderService(storage)
+    todo = TodoService(storage)
 
     # Register
     registry = ServiceRegistry()
@@ -28,6 +38,11 @@ def run_server():
     registry.register(llm)
     registry.register(weather)
     registry.register(news)
+    registry.register(storage)
+    registry.register(grocery)
+    registry.register(timers)
+    registry.register(reminders)
+    registry.register(todo)
 
     # Brain
     agent = Agent(llm, registry, settings)

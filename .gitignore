@@ -32,6 +32,9 @@ ENV/
 ._*
 Thumbs.db
 
+# Data (SQLite DB)
+data/
+
 # Test / coverage
 .pytest_cache/
 htmlcov/
