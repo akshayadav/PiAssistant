@@ -2,72 +2,66 @@
   "hooks": {
     "SessionStart": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
-            "timeout": 5,
-            "headers": { "X-Machine": "MacMini" }
+            "type": "command",
+            "command": "curl -s -X POST http://piassistant-mothership.local:8000/api/hooks/event -H 'Content-Type: application/json' -H 'X-Machine: MacMini' -d \"$(cat /dev/stdin)\" --connect-timeout 3 > /dev/null 2>&1 || true"
           }
         ]
       }
     ],
     "UserPromptSubmit": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
-            "timeout": 5,
-            "headers": { "X-Machine": "MacMini" }
+            "type": "command",
+            "command": "curl -s -X POST http://piassistant-mothership.local:8000/api/hooks/event -H 'Content-Type: application/json' -H 'X-Machine: MacMini' -d \"$(cat /dev/stdin)\" --connect-timeout 3 > /dev/null 2>&1 || true"
           }
         ]
       }
     ],
     "PreToolUse": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
-            "timeout": 5,
-            "headers": { "X-Machine": "MacMini" }
+            "type": "command",
+            "command": "curl -s -X POST http://piassistant-mothership.local:8000/api/hooks/event -H 'Content-Type: application/json' -H 'X-Machine: MacMini' -d \"$(cat /dev/stdin)\" --connect-timeout 3 > /dev/null 2>&1 || true"
           }
         ]
       }
     ],
     "Stop": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
-            "timeout": 5,
-            "headers": { "X-Machine": "MacMini" }
+            "type": "command",
+            "command": "curl -s -X POST http://piassistant-mothership.local:8000/api/hooks/event -H 'Content-Type: application/json' -H 'X-Machine: MacMini' -d \"$(cat /dev/stdin)\" --connect-timeout 3 > /dev/null 2>&1 || true"
           }
         ]
       }
     ],
     "Notification": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
-            "timeout": 5,
-            "headers": { "X-Machine": "MacMini" }
+            "type": "command",
+            "command": "curl -s -X POST http://piassistant-mothership.local:8000/api/hooks/event -H 'Content-Type: application/json' -H 'X-Machine: MacMini' -d \"$(cat /dev/stdin)\" --connect-timeout 3 > /dev/null 2>&1 || true"
           }
         ]
       }
     ],
     "SessionEnd": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
-            "timeout": 5,
-            "headers": { "X-Machine": "MacMini" }
+            "type": "command",
+            "command": "curl -s -X POST http://piassistant-mothership.local:8000/api/hooks/event -H 'Content-Type: application/json' -H 'X-Machine: MacMini' -d \"$(cat /dev/stdin)\" --connect-timeout 3 > /dev/null 2>&1 || true"
           }
         ]
       }
