@@ -2,22 +2,28 @@
 Description=PiAssistant Kiosk Display
 After=piassistant.service
 Wants=piassistant.service
-Conflicts=getty@tty1.service
-After=getty@tty1.service
 
 [Service]
 Type=simple
+ExecStart=/usr/bin/cage -s -- /usr/bin/chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --enable-features=OverlayScrollbar --disable-translate http://localhost:8000
 User=%i
-TTYPath=/dev/tty1
-StandardInput=tty
-StandardOutput=tty
-StandardError=journal
-PAMName=login
 Environment=WLR_LIBINPUT_NO_DEVICES=1
 Environment=XDG_RUNTIME_DIR=/run/user/%U
-ExecStart=/usr/bin/cage -s -- /usr/bin/chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --enable-features=OverlayScrollbar --disable-translate http://localhost:8000
+Environment=WLR_BACKENDS=drm
+Environment=SEATD_VTBOUND=0
 Restart=always
 RestartSec=5
+
+# TTY/seat access
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+PAMName=login
+UtmpIdentifier=tty1
+UtmpMode=user
+
+# Ensure proper permissions
+SupplementaryGroups=video render input
 
 [Install]
 WantedBy=multi-user.target
