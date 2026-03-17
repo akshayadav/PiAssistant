@@ -1,15 +1,23 @@
 import asyncio
 import json
+import os
 import sys
 
 import httpx
 
 
-async def repl(base_url: str = "http://localhost:8000"):
-    """Interactive REPL that talks to the running FastAPI server."""
-    client = httpx.AsyncClient(base_url=base_url, timeout=30)
+async def repl(base_url: str | None = None):
+    """Interactive REPL that talks to the running FastAPI server.
 
-    print("PiAssistant CLI")
+    Server URL resolution order:
+    1. base_url argument (if provided)
+    2. PIASSISTANT_URL environment variable
+    3. http://localhost:8000 (default)
+    """
+    url = base_url or os.environ.get("PIASSISTANT_URL", "http://localhost:8000")
+    client = httpx.AsyncClient(base_url=url, timeout=30)
+
+    print(f"PiAssistant CLI (server: {url})")
     print("Commands: 'quit', 'health', 'reset'")
     print("-" * 40)
 

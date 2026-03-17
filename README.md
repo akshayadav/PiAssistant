@@ -50,13 +50,36 @@ pip install -e ".[dev]"
 cp .env.example .env   # fill in API keys
 
 # Run server
-python -m piassistant.main
+python -m piassistant
 
 # Chat via CLI (separate terminal)
-python -m piassistant.main cli
+python -m piassistant cli
 
 # Test Pico W endpoint
 curl http://localhost:8000/api/pico/weather
+```
+
+## Deploy to Raspberry Pi 5
+
+See [deploy/README.md](deploy/README.md) for full instructions. Quick version:
+
+```bash
+# On Pi (after flashing Pi OS Lite 64-bit)
+git clone https://github.com/<username>/PiAssistant.git
+cd PiAssistant
+bash deploy/setup.sh
+nano .env                              # add API keys
+sudo systemctl start piassistant
+```
+
+Then from Mac:
+
+```bash
+# CLI pointing at Pi
+python -m piassistant cli http://piassistant.local:8000
+
+# Or via env var
+PIASSISTANT_URL=http://piassistant.local:8000 python -m piassistant cli
 ```
 
 ## Related Projects

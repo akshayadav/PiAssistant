@@ -40,7 +40,9 @@ def run_server():
 
 def run_cli():
     from .cli.repl import repl
-    asyncio.run(repl())
+    # Optional: python -m piassistant cli http://piassistant.local:8000
+    url = sys.argv[2] if len(sys.argv) > 2 else None
+    asyncio.run(repl(base_url=url))
 
 
 if __name__ == "__main__":

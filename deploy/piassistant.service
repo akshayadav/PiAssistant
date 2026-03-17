@@ -1,0 +1,17 @@
+[Unit]
+Description=PiAssistant Smart Assistant
+After=network-online.target mosquitto.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/home/%i/PiAssistant
+Environment=PATH=/home/%i/PiAssistant/.venv/bin:/usr/bin
+EnvironmentFile=/home/%i/PiAssistant/.env
+ExecStart=/home/%i/PiAssistant/.venv/bin/python -m piassistant
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
