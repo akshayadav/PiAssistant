@@ -1,3 +1,6 @@
+import asyncio
+import subprocess
+
 from fastapi import APIRouter, Request
 
 router = APIRouter()
@@ -13,3 +16,13 @@ async def health(request: Request):
         "status": "ok" if all_healthy else "degraded",
         "services": checks,
     }
+
+
+@router.post("/shutdown")
+async def shutdown():
+    """Safely shut down the Raspberry Pi."""
+    # Give time for the HTTP response to be sent before shutdown
+    asyncio.get_event_loop().call_later(
+        2, lambda: subprocess.run(["sudo", "shutdown", "-h", "now"])
+    )
+    return {"status": "shutting_down"}

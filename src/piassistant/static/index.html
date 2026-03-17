@@ -162,6 +162,7 @@
   </div>
   <div class="header-actions">
     <button onclick="resetChat()">New Chat</button>
+    <button onclick="shutdownPi()" style="color:#e94560">Shutdown</button>
   </div>
 </header>
 
@@ -305,6 +306,18 @@ async function fetchWeather() {
     `;
   } catch {
     weatherBar.innerHTML = '<span class="weather-item"><span class="label">Weather unavailable</span></span>';
+  }
+}
+
+async function shutdownPi() {
+  if (!confirm("Shut down the Raspberry Pi?")) return;
+  try {
+    await fetch("/api/shutdown", { method: "POST" });
+    addMessage("Shutting down... Safe to unplug in 10 seconds.", "bot");
+    statusEl.textContent = "shutting down";
+    statusEl.className = "status";
+  } catch (err) {
+    addMessage(`Shutdown failed: ${err.message}`, "bot error");
   }
 }
 
