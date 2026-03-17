@@ -76,10 +76,10 @@ Then from Mac:
 
 ```bash
 # CLI pointing at Pi
-python -m piassistant cli http://piassistant.local:8000
+python -m piassistant cli http://piassistant-mothership.local:8000
 
 # Or via env var
-PIASSISTANT_URL=http://piassistant.local:8000 python -m piassistant cli
+PIASSISTANT_URL=http://piassistant-mothership.local:8000 python -m piassistant cli
 ```
 
 ## Related Projects

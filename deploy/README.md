@@ -8,7 +8,7 @@
 
 ### Imager Settings (gear icon)
 
-- Hostname: `piassistant`
+- Hostname: `PiAssistant-Mothership`
 - Enable SSH
 - Set username/password
 - Configure WiFi
@@ -19,7 +19,7 @@
 SSH into the Pi, clone the repo, then run the setup script:
 
 ```bash
-ssh <username>@piassistant.local
+ssh <username>@piassistant-mothership.local
 
 # Clone first (setup script expects the repo)
 git clone https://github.com/<username>/PiAssistant.git
@@ -72,7 +72,7 @@ nano .env   # add ANTHROPIC_API_KEY and NEWSAPI_KEY
 source .venv/bin/activate
 python -m piassistant
 # In another terminal:
-curl http://piassistant.local:8000/api/health
+curl http://piassistant-mothership.local:8000/api/health
 ```
 
 ### 5. systemd service
@@ -110,7 +110,7 @@ The CLI can connect to the Pi server remotely:
 # On Mac
 cd /path/to/PiAssistant
 source .venv/bin/activate
-PIASSISTANT_URL=http://piassistant.local:8000 python -m piassistant cli
+PIASSISTANT_URL=http://piassistant-mothership.local:8000 python -m piassistant cli
 
 # Or via Tailscale
 PIASSISTANT_URL=http://<tailscale-ip>:8000 python -m piassistant cli
@@ -118,10 +118,10 @@ PIASSISTANT_URL=http://<tailscale-ip>:8000 python -m piassistant cli
 
 ## Verification Checklist
 
-- [ ] `ssh <user>@piassistant.local` works
+- [ ] `ssh <user>@piassistant-mothership.local` works
 - [ ] `systemctl status piassistant` shows active/running
-- [ ] `curl http://piassistant.local:8000/api/health` returns healthy
-- [ ] `curl http://piassistant.local:8000/api/pico/weather` returns weather
+- [ ] `curl http://piassistant-mothership.local:8000/api/health` returns healthy
+- [ ] `curl http://piassistant-mothership.local:8000/api/pico/weather` returns weather
 - [ ] Chat endpoint returns Claude response
 - [ ] Mosquitto accepts connections on port 1883
 - [ ] Service auto-restarts after kill

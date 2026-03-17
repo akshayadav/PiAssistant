@@ -179,8 +179,8 @@ python -m piassistant
 python -m piassistant cli
 
 # Run CLI pointing at remote Pi
-python -m piassistant cli http://piassistant.local:8000
-# Or: PIASSISTANT_URL=http://piassistant.local:8000 python -m piassistant cli
+python -m piassistant cli http://piassistant-mothership.local:8000
+# Or: PIASSISTANT_URL=http://piassistant-mothership.local:8000 python -m piassistant cli
 
 # Run tests
 pytest tests/
@@ -196,6 +196,12 @@ curl -X POST http://localhost:8000/api/chat \
 ## Pi 5 Deployment
 
 **OS**: Raspberry Pi OS Lite 64-bit (Bookworm) — lowest RAM overhead, best Pi 5 hardware support.
+
+**Connection details**:
+- Hostname: `PiAssistant-Mothership` (mDNS: `piassistant-mothership.local`)
+- User: `akshay`
+- SSH: `ssh akshay@piassistant-mothership.local`
+- Kernel: Linux 6.12 aarch64
 
 See [deploy/README.md](deploy/README.md) for full instructions. Key files:
 
