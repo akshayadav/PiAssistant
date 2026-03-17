@@ -1,0 +1,76 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
+            "timeout": 5,
+            "headers": { "X-Machine": "MacMini" }
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
+            "timeout": 5,
+            "headers": { "X-Machine": "MacMini" }
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
+            "timeout": 5,
+            "headers": { "X-Machine": "MacMini" }
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
+            "timeout": 5,
+            "headers": { "X-Machine": "MacMini" }
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
+            "timeout": 5,
+            "headers": { "X-Machine": "MacMini" }
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
+            "timeout": 5,
+            "headers": { "X-Machine": "MacMini" }
+          }
+        ]
+      }
+    ]
+  }
+}

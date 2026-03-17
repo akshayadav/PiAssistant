@@ -80,6 +80,12 @@ PiAssistant/
 ├── .env.example              # API keys template (never commit .env)
 ├── .gitignore
 ├── .mcp.json                 # MCP server config (committed)
+├── data/                     # SQLite DB (git-ignored)
+├── deploy/
+│   ├── setup.sh              # Pi setup script
+│   ├── piassistant.service   # systemd unit
+│   ├── mosquitto.conf        # MQTT config
+│   └── claude-hooks.json     # Claude Code hooks template for Mac
 ├── src/
 │   └── piassistant/
 │       ├── __init__.py
@@ -90,17 +96,26 @@ PiAssistant/
 │       │   ├── cache.py      # TTL in-memory cache
 │       │   ├── llm.py        # Claude API wrapper (Anthropic SDK)
 │       │   ├── weather.py    # Open-Meteo (cache-first, no API key)
-│       │   └── news.py       # NewsAPI.org (cache-first)
+│       │   ├── news.py       # NewsAPI.org (cache-first)
+│       │   ├── storage.py    # SQLite persistence via aiosqlite
+│       │   ├── grocery.py    # Grocery lists by store
+│       │   ├── timers.py     # In-memory cooking timers (asyncio)
+│       │   ├── reminders.py  # Reminders + notes (SQLite)
+│       │   └── todo.py       # To-do lists (SQLite)
 │       ├── brain/
 │       │   ├── agent.py      # Tool-use loop: user msg → Claude → tools → response
-│       │   └── tools.py      # Tool definitions for Claude
+│       │   └── tools.py      # Tool definitions for Claude (20 tools)
 │       ├── api/
 │       │   ├── app.py        # FastAPI app factory
 │       │   ├── routes_assistant.py  # /api/chat — human interaction
 │       │   ├── routes_pico.py       # /api/pico/* — compact JSON for Pico Ws
-│       │   └── routes_health.py     # /api/health — diagnostics
+│       │   ├── routes_health.py     # /api/health — diagnostics
+│       │   ├── routes_kiosk.py      # /api/grocery, /api/timers, etc. — widget data
+│       │   └── routes_hooks.py      # /api/hooks/* — Claude Code session monitor
 │       ├── static/
-│       │   └── index.html           # Web dashboard (chat + weather)
+│       │   ├── index.html           # Web dashboard with widget grid
+│       │   ├── css/dashboard.css    # Dashboard styles
+│       │   └── js/dashboard.js      # Widget JS (polling, interactions)
 │       └── cli/
 │           └── repl.py       # Interactive terminal REPL
 └── tests/
@@ -143,7 +158,6 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] FastAPI server: /api/chat, /api/pico/*, /api/health
 - [x] CLI REPL
 - [x] Switched weather from OpenWeatherMap to Open-Meteo (no API key, better data)
-- [x] 18 tests passing
 - [x] GitHub repo created
 - [x] Homebrew + gh CLI installed on dev Mac
 - [x] Pi 5 deployment: systemd service, Mosquitto config, setup script, CLI remote URL support
@@ -151,11 +165,19 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Web dashboard: single-page chat UI at `/` with weather bar, dark theme, responsive
 - [x] Pi 5 deployed: repo cloned, venv, systemd service running, all endpoints verified
 - [x] Kiosk display: Cage + Chromium fullscreen dashboard on HDMI
+- [x] Kiosk features — SQLite persistence, grocery lists (6 default stores), cooking timers, reminders, notes, to-do lists
+- [x] Claude Code session monitor — HTTP hooks receiver, in-memory session tracking, dashboard widget
+- [x] Dashboard overhaul — CSS Grid widget layout (weather, sessions, timers, reminders, grocery, notes, todos, chat)
+- [x] 20 Claude tools (weather 2, news 2, grocery 4, timers 3, reminders 2, notes 2, todos 3)
+- [x] Enhanced system prompt with all capabilities + free features (conversions, recipes, math)
+- [x] 31 tests passing
+- [x] Claude Code hooks configured on Mac — `~/.claude/settings.json` pushes 6 event types to Pi via HTTP hooks with X-Machine header
+- [x] Walkthrough doc: `docs/claude-session-monitor.md`
 
 ### Up Next (in priority order)
 1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
-5. **Voice (STT/TTS)** — hands-free interaction, offloaded to Mac Mini
-6. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
+2. **Voice (STT/TTS)** — hands-free interaction, offloaded to Mac Mini
+3. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
 
 ### Future
 - Local LLM fallback (Ollama on Mac Mini)
