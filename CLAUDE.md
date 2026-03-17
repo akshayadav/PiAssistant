@@ -211,7 +211,7 @@ See [deploy/README.md](deploy/README.md) for full instructions. Key files:
 | `deploy/setup.sh` | One-script Pi setup (apt, venv, systemd install) |
 | `deploy/piassistant.service` | systemd unit file |
 | `deploy/mosquitto.conf` | MQTT broker config for Pico W access |
-| `deploy/piassistant-kiosk.service` | Cage + Chromium kiosk display unit |
+| `~/.bash_profile` (on Pi) | Kiosk auto-launch: Cage + Chromium on tty1 |
 
 ```bash
 # Quick deploy (on Pi)

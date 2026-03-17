@@ -89,21 +89,33 @@ sudo systemctl start piassistant
 
 Displays the web dashboard fullscreen on an HDMI-connected monitor. Uses Cage (minimal Wayland compositor) instead of a full desktop environment (~100-150 MB vs ~350 MB RAM).
 
-```bash
-# Replace <username> and <uid> with your Pi username and UID (id -u)
-sed "s/%i/<username>/g; s/%U/<uid>/g" deploy/piassistant-kiosk.service | sudo tee /etc/systemd/system/piassistant-kiosk.service
-sudo systemctl daemon-reload
-sudo systemctl enable piassistant-kiosk
-sudo systemctl start piassistant-kiosk
-```
-
-Manage the kiosk:
+Uses getty autologin on tty1 + `~/.bash_profile` (more reliable than a standalone systemd service because getty handles VT/seat/DRM access properly).
 
 ```bash
-sudo systemctl status piassistant-kiosk    # Check status
-sudo systemctl restart piassistant-kiosk   # Restart
-sudo systemctl stop piassistant-kiosk      # Stop (returns to console)
+# Enable console autologin
+sudo raspi-config nonint do_boot_behaviour B2
+
+# Install seat manager
+sudo apt install -y seatd
+sudo systemctl enable seatd
+
+# Add kiosk launch to bash_profile
+cat >> ~/.bash_profile << 'EOF'
+# PiAssistant Kiosk: auto-launch on tty1 login
+if [ "$(tty)" = "/dev/tty1" ]; then
+  export WLR_LIBINPUT_NO_DEVICES=1
+  export XDG_RUNTIME_DIR=/run/user/$(id -u)
+  exec cage -s -- chromium --kiosk --noerrdialogs --disable-infobars \
+    --no-first-run --enable-features=OverlayScrollbar \
+    --disable-translate http://localhost:8000
+fi
+EOF
+
+# Restart getty to launch kiosk now
+sudo systemctl restart getty@tty1
 ```
+
+SSH sessions are unaffected (they don't use tty1).
 
 ### 7. Tailscale (optional, for remote access)
 

@@ -16,7 +16,7 @@ echo ">> Updating system..."
 sudo apt update && sudo apt full-upgrade -y
 
 echo ">> Installing dependencies..."
-sudo apt install -y git python3-venv python3-pip mosquitto mosquitto-clients cage chromium
+sudo apt install -y git python3-venv python3-pip mosquitto mosquitto-clients cage chromium seatd
 
 # --- Mosquitto ---
 echo ">> Configuring Mosquitto..."
@@ -51,14 +51,39 @@ else
     echo ">> .env already exists, skipping."
 fi
 
-# --- systemd services ---
-echo ">> Installing systemd services..."
-# Replace %i with actual username and %U with UID in service files
+# --- systemd service ---
+echo ">> Installing systemd service..."
 sed "s/%i/$USER/g" deploy/piassistant.service | sudo tee /etc/systemd/system/${SERVICE_NAME}.service > /dev/null
-sed "s/%i/$USER/g; s/%U/$(id -u)/g" deploy/piassistant-kiosk.service | sudo tee /etc/systemd/system/${SERVICE_NAME}-kiosk.service > /dev/null
 sudo systemctl daemon-reload
 sudo systemctl enable "$SERVICE_NAME"
-sudo systemctl enable "${SERVICE_NAME}-kiosk"
+
+# --- Seat manager ---
+echo ">> Enabling seatd..."
+sudo systemctl enable seatd
+sudo systemctl start seatd 2>/dev/null || true
+
+# --- Kiosk display (Cage + Chromium via getty autologin) ---
+echo ">> Configuring kiosk display..."
+sudo raspi-config nonint do_boot_behaviour B2
+# Passwordless sudo for shutdown (used by web dashboard button)
+echo "$USER ALL=(ALL) NOPASSWD: /sbin/shutdown" | sudo tee /etc/sudoers.d/piassistant-shutdown > /dev/null
+sudo chmod 440 /etc/sudoers.d/piassistant-shutdown
+# Add kiosk auto-launch to bash_profile (only on tty1, SSH unaffected)
+if ! grep -q "PiAssistant Kiosk" "$HOME/.bash_profile" 2>/dev/null; then
+    cat >> "$HOME/.bash_profile" << 'KIOSK'
+# PiAssistant Kiosk: auto-launch on tty1 login
+if [ "$(tty)" = "/dev/tty1" ]; then
+  export WLR_LIBINPUT_NO_DEVICES=1
+  export XDG_RUNTIME_DIR=/run/user/$(id -u)
+  exec cage -s -- chromium --kiosk --noerrdialogs --disable-infobars \
+    --no-first-run --enable-features=OverlayScrollbar \
+    --disable-translate http://localhost:8000
+fi
+KIOSK
+    echo ">> Kiosk auto-launch added to ~/.bash_profile"
+else
+    echo ">> Kiosk already in ~/.bash_profile, skipping."
+fi
 
 echo ""
 echo "=== Setup complete! ==="
