@@ -21,8 +21,16 @@
 
 <div id="widgets">
   <!-- Weather -->
-  <div class="widget" id="weather-widget">
-    <h2>Weather</h2>
+  <div class="widget" id="weather-widget" style="grid-column: span 2">
+    <h2>Weather <span class="count" id="weather-count">0</span>
+      <button class="widget-add-btn" onclick="toggleWeatherForm()" title="Add city">+</button>
+    </h2>
+    <div id="weather-add-form" style="display:none;margin-bottom:8px">
+      <form onsubmit="addWeatherCity(event)" style="display:flex;gap:6px">
+        <input type="text" id="weather-city-input" placeholder="City, State/Country" style="flex:1;padding:4px 8px;background:var(--bg);border:1px solid #ffffff20;border-radius:6px;color:var(--text);font-size:0.8rem">
+        <button type="submit" style="padding:4px 10px;background:var(--accent);border:none;border-radius:6px;color:white;font-size:0.8rem;cursor:pointer">Add</button>
+      </form>
+    </div>
     <div id="weather-content"><div class="empty-state">Loading...</div></div>
   </div>
 

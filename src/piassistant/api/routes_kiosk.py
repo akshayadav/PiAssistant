@@ -1,7 +1,109 @@
+import asyncio
+
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
 router = APIRouter()
+
+
+# --- Weather Cities ---
+
+DEFAULT_WEATHER_CITIES = [
+    ("Santa Clara, CA", "Santa Clara, CA"),
+    ("Palo Alto, CA", "Palo Alto, CA"),
+    ("Idaho Falls, ID", "Idaho Falls, ID"),
+    ("Indore, MP, India", "Indore, India"),
+    ("Ahmedabad, Gujarat, India", "Ahmedabad, India"),
+]
+
+
+class WeatherCityRequest(BaseModel):
+    name: str
+    display_name: str = ""
+
+
+@router.get("/weather/cities")
+async def get_weather_cities(request: Request):
+    """Get all tracked weather cities with current conditions."""
+    storage = request.app.state.registry.get("storage")
+    weather = request.app.state.registry.get("weather")
+
+    db = await storage.connect()
+    try:
+        cursor = await db.execute("SELECT id, name, display_name FROM weather_cities ORDER BY id")
+        rows = await cursor.fetchall()
+    finally:
+        await db.close()
+
+    if not rows:
+        # Seed defaults on first access
+        db = await storage.connect()
+        try:
+            for name, display in DEFAULT_WEATHER_CITIES:
+                await db.execute(
+                    "INSERT OR IGNORE INTO weather_cities (name, display_name) VALUES (?, ?)",
+                    (name, display),
+                )
+            await db.commit()
+            cursor = await db.execute("SELECT id, name, display_name FROM weather_cities ORDER BY id")
+            rows = await cursor.fetchall()
+        finally:
+            await db.close()
+
+    # Fetch weather for all cities in parallel
+    async def fetch_one(city_id, name, display_name):
+        try:
+            data = await weather.get_current(location=name)
+            return {
+                "id": city_id,
+                "name": name,
+                "display_name": display_name,
+                "temp": data["temp_f"],
+                "feel": data["feels_like_f"],
+                "desc": data["description"],
+                "hum": data["humidity"],
+                "wind": data["wind_mph"],
+            }
+        except Exception:
+            return {
+                "id": city_id,
+                "name": name,
+                "display_name": display_name,
+                "temp": None,
+                "desc": "Unavailable",
+            }
+
+    tasks = [fetch_one(r[0], r[1], r[2]) for r in rows]
+    results = await asyncio.gather(*tasks)
+    return list(results)
+
+
+@router.post("/weather/cities")
+async def add_weather_city(request: Request, body: WeatherCityRequest):
+    storage = request.app.state.registry.get("storage")
+    display = body.display_name or body.name
+    db = await storage.connect()
+    try:
+        cursor = await db.execute(
+            "INSERT OR IGNORE INTO weather_cities (name, display_name) VALUES (?, ?)",
+            (body.name, display),
+        )
+        await db.commit()
+        return {"id": cursor.lastrowid, "name": body.name, "display_name": display}
+    finally:
+        await db.close()
+
+
+@router.delete("/weather/cities/{city_id}")
+async def delete_weather_city(request: Request, city_id: int):
+    storage = request.app.state.registry.get("storage")
+    db = await storage.connect()
+    try:
+        cursor = await db.execute("DELETE FROM weather_cities WHERE id = ?", (city_id,))
+        await db.commit()
+        return {"deleted": cursor.rowcount > 0}
+    finally:
+        await db.close()
 
 
 # --- Grocery ---

@@ -131,23 +131,65 @@ async function checkHealth() {
 
 async function fetchWeather() {
   const el = document.getElementById("weather-content");
+  const countEl = document.getElementById("weather-count");
   try {
-    const res = await fetch("/api/pico/weather");
+    const res = await fetch("/api/weather/cities");
     if (!res.ok) throw new Error();
-    const w = await res.json();
-    el.innerHTML = `
-      <div class="weather-temp">${w.temp}&deg;F</div>
-      <div style="margin-bottom:6px;font-size:0.85rem">${w.desc}</div>
-      <div class="weather-grid">
-        <div class="weather-stat"><div class="label">Feels like</div><div class="value">${w.feel}&deg;F</div></div>
-        <div class="weather-stat"><div class="label">Humidity</div><div class="value">${w.hum}%</div></div>
-        <div class="weather-stat"><div class="label">Wind</div><div class="value">${w.wind} mph</div></div>
-        <div class="weather-stat"><div class="label">Location</div><div class="value">${w.loc}</div></div>
+    const cities = await res.json();
+    countEl.textContent = cities.length;
+
+    if (cities.length === 0) {
+      el.innerHTML = '<div class="empty-state">No cities tracked</div>';
+      return;
+    }
+
+    el.innerHTML = '<div class="weather-cities">' + cities.map(c => `
+      <div class="weather-city-card">
+        <button class="weather-city-remove" onclick="removeWeatherCity(${c.id})" title="Remove">&times;</button>
+        <div class="weather-city-name">${c.display_name}</div>
+        ${c.temp !== null && c.temp !== undefined
+          ? `<div class="weather-city-temp">${Math.round(c.temp)}&deg;F</div>
+             <div class="weather-city-desc">${c.desc}</div>
+             <div class="weather-city-details">
+               <span>Feels ${Math.round(c.feel)}&deg;</span>
+               <span>${c.hum}%</span>
+               <span>${c.wind}mph</span>
+             </div>`
+          : '<div class="weather-city-desc">Unavailable</div>'
+        }
       </div>
-    `;
+    `).join("") + '</div>';
   } catch {
     el.innerHTML = '<div class="empty-state">Weather unavailable</div>';
   }
+}
+
+function toggleWeatherForm() {
+  const form = document.getElementById("weather-add-form");
+  form.style.display = form.style.display === "none" ? "block" : "none";
+  if (form.style.display === "block") {
+    document.getElementById("weather-city-input").focus();
+  }
+}
+
+async function addWeatherCity(e) {
+  e.preventDefault();
+  const input = document.getElementById("weather-city-input");
+  const name = input.value.trim();
+  if (!name) return;
+  await fetch("/api/weather/cities", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: name }),
+  });
+  input.value = "";
+  document.getElementById("weather-add-form").style.display = "none";
+  fetchWeather();
+}
+
+async function removeWeatherCity(id) {
+  await fetch(`/api/weather/cities/${id}`, { method: "DELETE" });
+  fetchWeather();
 }
 
 // === Sessions Widget ===
