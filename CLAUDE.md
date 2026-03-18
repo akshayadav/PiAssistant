@@ -175,11 +175,12 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Walkthrough doc: `docs/claude-session-monitor.md`
 - [x] News dashboard widget — 4 configurable feeds (Global, India, Indore, Santa Clara), 6-hour cache TTL, add/remove from UI
 - [x] Walkthrough doc: `docs/news-dashboard-widget.md`
+- [x] Read headlines aloud — browser TTS (Web Speech API), ▶ Read / ■ Stop button in news widget header
 
 ### Up Next (in priority order)
 1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
-2. **Voice (STT/TTS)** — hands-free interaction, offloaded to Mac Mini
-3. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
+3. **Voice (STT/TTS)** — hands-free interaction, offloaded to Mac Mini
+4. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
 
 ### Future
 - Local LLM fallback (Ollama on Mac Mini)

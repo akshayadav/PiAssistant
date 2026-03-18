@@ -308,6 +308,9 @@ function dismissTimerAlert() {
 
 // === News Widget ===
 
+let newsFeedsData = [];
+let newsSpeaking = false;
+
 async function fetchNews() {
   const el = document.getElementById("news-content");
   const countEl = document.getElementById("news-count");
@@ -315,6 +318,7 @@ async function fetchNews() {
     const res = await fetch("/api/news/feeds");
     if (!res.ok) throw new Error();
     const feeds = await res.json();
+    newsFeedsData = feeds;
     const totalArticles = feeds.reduce((s, f) => s + f.articles.length, 0);
     countEl.textContent = totalArticles;
 
@@ -380,6 +384,35 @@ async function addNewsFeed(e) {
 async function removeNewsFeed(id) {
   await fetch(`/api/news/feeds/${id}`, { method: "DELETE" });
   fetchNews();
+}
+
+function speakNews() {
+  if (newsSpeaking) {
+    speechSynthesis.cancel();
+    return;
+  }
+
+  const lines = [];
+  for (const feed of newsFeedsData) {
+    if (!feed.articles.length) continue;
+    lines.push(feed.name + ".");
+    for (const a of feed.articles) lines.push(a.title + ".");
+  }
+  if (!lines.length) return;
+
+  const utterance = new SpeechSynthesisUtterance(lines.join(" "));
+  utterance.rate = 0.95;
+  utterance.onstart = () => { newsSpeaking = true; setNewsTTSButton(true); };
+  utterance.onend = () => { newsSpeaking = false; setNewsTTSButton(false); };
+  utterance.onerror = () => { newsSpeaking = false; setNewsTTSButton(false); };
+  speechSynthesis.speak(utterance);
+}
+
+function setNewsTTSButton(speaking) {
+  const btn = document.getElementById("news-tts-btn");
+  if (!btn) return;
+  btn.textContent = speaking ? "■ Stop" : "▶ Read";
+  btn.title = speaking ? "Stop reading" : "Read headlines aloud";
 }
 
 // === Grocery Widget ===

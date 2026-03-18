@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PiAssistant</title>
-<link rel="stylesheet" href="/static/css/dashboard.css?v=6">
+<link rel="stylesheet" href="/static/css/dashboard.css?v=7">
 </head>
 <body>
 
@@ -55,6 +55,7 @@
   <!-- News -->
   <div class="widget" id="news-widget" style="grid-column: span 2">
     <h2>News <span class="count" id="news-count">0</span>
+      <button class="widget-add-btn" id="news-tts-btn" onclick="speakNews()" title="Read headlines aloud">▶ Read</button>
       <button class="widget-add-btn" onclick="toggleNewsForm()" title="Add feed">+</button>
     </h2>
     <div id="news-add-form" style="display:none;margin-bottom:8px">
@@ -109,7 +110,7 @@
   <button onclick="dismissTimerAlert()">Dismiss</button>
 </div>
 
-<script src="/static/js/dashboard.js?v=6"></script>
+<script src="/static/js/dashboard.js?v=7"></script>
 
 </body>
 </html>
