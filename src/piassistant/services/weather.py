@@ -52,22 +52,43 @@ class WeatherService(BaseService):
         self._client = httpx.AsyncClient(timeout=10)
 
     async def geocode(self, location: str) -> tuple[float, float, str]:
-        """Resolve a city name to (lat, lon, resolved_name) via Open-Meteo geocoding."""
+        """Resolve a city name to (lat, lon, resolved_name) via Open-Meteo geocoding.
+
+        Handles "City, State/Country" format by searching for the city name
+        and matching against the region hint in the results.
+        """
         cache_key = f"geo:{location.lower()}"
         cached = await self.cache.get(cache_key)
         if cached:
             return cached
 
+        # Split "Santa Clara, CA" into city="Santa Clara", hint="CA"
+        parts = [p.strip() for p in location.split(",")]
+        city_name = parts[0]
+        hint = " ".join(parts[1:]).lower() if len(parts) > 1 else ""
+
         resp = await self._client.get(
             self.GEO_URL,
-            params={"name": location, "count": 1, "language": "en", "format": "json"},
+            params={"name": city_name, "count": 10, "language": "en", "format": "json"},
         )
         resp.raise_for_status()
         results = resp.json().get("results", [])
         if not results:
             return self.default_lat, self.default_lon, self.default_location
 
+        # If we have a hint, try to match against admin1, country, or country_code
         r = results[0]
+        if hint:
+            for candidate in results:
+                fields = [
+                    candidate.get("admin1", "").lower(),
+                    candidate.get("country", "").lower(),
+                    candidate.get("country_code", "").lower(),
+                ]
+                if any(hint in f or f.startswith(hint) for f in fields):
+                    r = candidate
+                    break
+
         lat, lon = r["latitude"], r["longitude"]
         name = r.get("name", location)
         admin = r.get("admin1", "")
