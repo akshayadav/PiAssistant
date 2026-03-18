@@ -134,10 +134,15 @@ class NewsFeedRequest(BaseModel):
     provider: str = "newsapi"  # "newsapi" or "newsdata"
 
 
+# Titles matching these patterns are filler, not real headlines
+_NEWSDATA_JUNK = {"word of the day", "quote of the day", "reflections", "thought for the day",
+                  "today's horoscope", "daily horoscope", "morning briefing"}
+
+
 async def fetch_newsdata(api_key: str, country: str = "", query: str = "",
                          count: int = 10) -> list[dict]:
-    """Fetch articles from Newsdata.io API."""
-    params = {"apikey": api_key, "language": "en"}
+    """Fetch articles from Newsdata.io API, filtering filler content."""
+    params = {"apikey": api_key, "language": "en", "prioritydomain": "top"}
     if country:
         params["country"] = country
     if query:
@@ -148,14 +153,20 @@ async def fetch_newsdata(api_key: str, country: str = "", query: str = "",
     resp.raise_for_status()
     raw = resp.json()
     articles = []
-    for a in raw.get("results", [])[:count]:
+    for a in raw.get("results", []):
+        title = a.get("title", "")
+        # Skip filler content
+        if any(junk in title.lower() for junk in _NEWSDATA_JUNK):
+            continue
         articles.append({
-            "title": a.get("title", ""),
+            "title": title,
             "description": a.get("description", ""),
             "source": a.get("source_name", ""),
             "url": a.get("link", ""),
             "published_at": a.get("pubDate", ""),
         })
+        if len(articles) >= count:
+            break
     return articles
 
 
