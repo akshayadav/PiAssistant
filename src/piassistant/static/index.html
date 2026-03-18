@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PiAssistant</title>
-<link rel="stylesheet" href="/static/css/dashboard.css?v=7">
+<link rel="stylesheet" href="/static/css/dashboard.css?v=8">
 </head>
 <body>
 
@@ -19,6 +19,7 @@
   </div>
 </header>
 
+<div id="main-scroll">
 <div id="widgets">
   <!-- Weather -->
   <div class="widget" id="weather-widget" style="grid-column: span 2">
@@ -98,10 +99,12 @@
 
 <div id="chat-area">
   <div id="messages"></div>
-  <div id="input-area">
-    <textarea id="msg-input" rows="1" placeholder="Ask me anything..." autofocus></textarea>
-    <button id="send-btn" onclick="sendMessage()">Send</button>
-  </div>
+</div>
+</div><!-- end main-scroll -->
+
+<div id="input-area">
+  <textarea id="msg-input" rows="1" placeholder="Ask me anything..." autofocus></textarea>
+  <button id="send-btn" onclick="sendMessage()">Send</button>
 </div>
 
 <!-- Timer alert overlay -->
@@ -110,7 +113,7 @@
   <button onclick="dismissTimerAlert()">Dismiss</button>
 </div>
 
-<script src="/static/js/dashboard.js?v=7"></script>
+<script src="/static/js/dashboard.js?v=8"></script>
 
 </body>
 </html>

@@ -1,5 +1,6 @@
 // === DOM refs ===
 const messagesEl = document.getElementById("messages");
+const mainScroll = document.getElementById("main-scroll");
 const inputEl = document.getElementById("msg-input");
 const sendBtn = document.getElementById("send-btn");
 const statusEl = document.getElementById("status");
@@ -34,6 +35,7 @@ function addMessage(text, role) {
   div.appendChild(body);
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
+  mainScroll.scrollTop = mainScroll.scrollHeight;
   return div;
 }
 
@@ -50,6 +52,7 @@ function addThinking() {
   div.appendChild(body);
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
+  mainScroll.scrollTop = mainScroll.scrollHeight;
 }
 
 function removeThinking() {

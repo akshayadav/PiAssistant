@@ -22,7 +22,7 @@ body {
   color: var(--text);
   height: 100dvh;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto 1fr auto;
   overflow: hidden;
 }
 
@@ -50,6 +50,12 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
 }
 .header-actions button:hover { color: var(--text); }
 
+/* Main scrollable area (widgets + chat) */
+#main-scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Widget panel */
 #widgets {
   display: grid;
@@ -57,8 +63,6 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   gap: 8px;
   padding: 8px;
   background: var(--bg);
-  overflow-y: auto;
-  max-height: 45vh;
 }
 
 .widget {
@@ -282,15 +286,10 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
 
 /* Chat area */
 #chat-area {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
   border-top: 1px solid #ffffff10;
 }
 
 #messages {
-  flex: 1;
-  overflow-y: auto;
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
@@ -402,4 +401,84 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   font-size: 1rem;
   cursor: pointer;
   font-weight: 600;
+}
+
+/* ===== Responsive: Mobile (< 600px) ===== */
+@media (max-width: 599px) {
+  body {
+    grid-template-rows: auto 1fr auto;
+  }
+
+  #widgets {
+    grid-template-columns: 1fr;
+  }
+
+  /* Cancel all span overrides on mobile — single column */
+  #widgets > .widget {
+    grid-column: span 1 !important;
+  }
+
+  .widget {
+    max-height: none;
+  }
+
+  /* Limit tall widgets so they don't dominate the scroll */
+  #news-widget { max-height: 300px; overflow-y: auto; }
+  #grocery-widget { max-height: 250px; overflow-y: auto; }
+
+  /* Weather cards: 2 per row on mobile */
+  .weather-city-card {
+    min-width: 110px;
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  /* News feeds stack vertically */
+  .news-feeds { flex-direction: column; }
+  .news-feed-section { min-width: unset; }
+
+  /* Chat messages a bit wider on mobile */
+  .msg { max-width: 92%; }
+
+  /* Input area safe for bottom nav/keyboard */
+  #input-area {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  /* Header compact */
+  header h1 { font-size: 1rem; }
+  .header-actions button { padding: 5px 10px; font-size: 0.75rem; }
+}
+
+/* ===== Responsive: Tablet (600–899px) ===== */
+@media (min-width: 600px) and (max-width: 899px) {
+  #widgets {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ===== Responsive: Desktop / Kiosk (≥900px) ===== */
+@media (min-width: 900px) {
+  body {
+    grid-template-rows: auto auto 1fr auto;
+  }
+
+  #main-scroll {
+    display: contents;
+  }
+
+  #widgets {
+    max-height: 45vh;
+    overflow-y: auto;
+  }
+
+  #chat-area {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+  }
 }
