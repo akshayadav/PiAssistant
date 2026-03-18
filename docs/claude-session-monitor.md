@@ -104,72 +104,66 @@ This is the key step — telling Claude Code to push events to the Pi. Add a `ho
   "hooks": {
     "SessionStart": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
-            "timeout": 5,
-            "headers": { "X-Machine": "MacMini" }
+            "type": "command",
+            "command": "curl -s -X POST http://piassistant-mothership.local:8000/api/hooks/event -H 'Content-Type: application/json' -H 'X-Machine: MacMini' -d \"$(cat /dev/stdin)\" --connect-timeout 3 > /dev/null 2>&1 || true"
           }
         ]
       }
     ],
     "UserPromptSubmit": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
-            "timeout": 5,
-            "headers": { "X-Machine": "MacMini" }
+            "type": "command",
+            "command": "curl -s -X POST http://piassistant-mothership.local:8000/api/hooks/event -H 'Content-Type: application/json' -H 'X-Machine: MacMini' -d \"$(cat /dev/stdin)\" --connect-timeout 3 > /dev/null 2>&1 || true"
           }
         ]
       }
     ],
     "PreToolUse": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
-            "timeout": 5,
-            "headers": { "X-Machine": "MacMini" }
+            "type": "command",
+            "command": "curl -s -X POST http://piassistant-mothership.local:8000/api/hooks/event -H 'Content-Type: application/json' -H 'X-Machine: MacMini' -d \"$(cat /dev/stdin)\" --connect-timeout 3 > /dev/null 2>&1 || true"
           }
         ]
       }
     ],
     "Stop": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
-            "timeout": 5,
-            "headers": { "X-Machine": "MacMini" }
+            "type": "command",
+            "command": "curl -s -X POST http://piassistant-mothership.local:8000/api/hooks/event -H 'Content-Type: application/json' -H 'X-Machine: MacMini' -d \"$(cat /dev/stdin)\" --connect-timeout 3 > /dev/null 2>&1 || true"
           }
         ]
       }
     ],
     "Notification": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
-            "timeout": 5,
-            "headers": { "X-Machine": "MacMini" }
+            "type": "command",
+            "command": "curl -s -X POST http://piassistant-mothership.local:8000/api/hooks/event -H 'Content-Type: application/json' -H 'X-Machine: MacMini' -d \"$(cat /dev/stdin)\" --connect-timeout 3 > /dev/null 2>&1 || true"
           }
         ]
       }
     ],
     "SessionEnd": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "http://piassistant-mothership.local:8000/api/hooks/event",
-            "timeout": 5,
-            "headers": { "X-Machine": "MacMini" }
+            "type": "command",
+            "command": "curl -s -X POST http://piassistant-mothership.local:8000/api/hooks/event -H 'Content-Type: application/json' -H 'X-Machine: MacMini' -d \"$(cat /dev/stdin)\" --connect-timeout 3 > /dev/null 2>&1 || true"
           }
         ]
       }
@@ -179,10 +173,12 @@ This is the key step — telling Claude Code to push events to the Pi. Add a `ho
 ```
 
 **Key details:**
-- `"type": "http"` — Claude Code natively supports HTTP hooks, no shell scripts needed
-- `"timeout": 5` — 5-second timeout so hooks don't slow down Claude Code if the Pi is unreachable
-- `"headers": { "X-Machine": "MacMini" }` — Custom header so the dashboard knows which machine the session is on
+- `"type": "command"` — hooks run a shell command; we use `curl` to POST the event JSON to the Pi
+- Claude Code pipes the hook payload JSON to stdin — `$(cat /dev/stdin)` captures it and passes it as the `-d` body
+- `--connect-timeout 3` + `|| true` — never blocks Claude Code if the Pi is unreachable
+- `X-Machine: MacMini` header — so the dashboard knows which computer the session is on
 - The URL uses mDNS (`piassistant-mothership.local`) — works on any LAN without hardcoding IPs
+- `"matcher": ""` — empty string matches all events (required field in Claude Code hooks config)
 
 ### 4. The Hook Event Flow
 
