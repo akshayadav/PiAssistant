@@ -109,6 +109,7 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   margin-bottom: 2px;
   padding-right: 14px;
 }
+.weather-city-time { font-size: 0.75rem; color: var(--blue); margin-bottom: 2px; }
 .weather-city-temp { font-size: 1.3rem; font-weight: 600; }
 .weather-city-desc { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px; }
 .weather-city-details { font-size: 0.7rem; color: var(--text-muted); }

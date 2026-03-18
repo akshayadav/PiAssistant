@@ -143,10 +143,20 @@ async function fetchWeather() {
       return;
     }
 
-    el.innerHTML = '<div class="weather-cities">' + cities.map(c => `
+    el.innerHTML = '<div class="weather-cities">' + cities.map(c => {
+      let localTime = "";
+      if (c.timezone) {
+        try {
+          localTime = new Date().toLocaleTimeString("en-US", {
+            timeZone: c.timezone, hour: "numeric", minute: "2-digit", hour12: true
+          });
+        } catch { localTime = ""; }
+      }
+      return `
       <div class="weather-city-card">
         <button class="weather-city-remove" onclick="removeWeatherCity(${c.id})" title="Remove">&times;</button>
         <div class="weather-city-name">${c.display_name}</div>
+        ${localTime ? `<div class="weather-city-time">${localTime}</div>` : ""}
         ${c.temp !== null && c.temp !== undefined
           ? `<div class="weather-city-temp">${Math.round(c.temp)}&deg;F</div>
              <div class="weather-city-desc">${c.desc}</div>
@@ -157,8 +167,8 @@ async function fetchWeather() {
              </div>`
           : '<div class="weather-city-desc">Unavailable</div>'
         }
-      </div>
-    `).join("") + '</div>';
+      </div>`;
+    }).join("") + '</div>';
   } catch {
     el.innerHTML = '<div class="empty-state">Weather unavailable</div>';
   }

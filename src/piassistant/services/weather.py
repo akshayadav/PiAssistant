@@ -121,7 +121,8 @@ class WeatherService(BaseService):
             },
         )
         resp.raise_for_status()
-        current = resp.json().get("current", {})
+        resp_json = resp.json()
+        current = resp_json.get("current", {})
 
         wmo_code = current.get("weather_code", 0)
         data = {
@@ -135,6 +136,7 @@ class WeatherService(BaseService):
             "location": resolved_name,
             "lat": lat,
             "lon": lon,
+            "timezone": resp_json.get("timezone", "UTC"),
         }
         await self.cache.set(cache_key, data, self.ttl)
         return data

@@ -63,6 +63,7 @@ async def get_weather_cities(request: Request):
                 "desc": data["description"],
                 "hum": data["humidity"],
                 "wind": data["wind_mph"],
+                "timezone": data.get("timezone", "UTC"),
             }
         except Exception:
             return {
