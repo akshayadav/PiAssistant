@@ -118,6 +118,7 @@ class WeatherService(BaseService):
                 "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m",
                 "temperature_unit": "fahrenheit",
                 "wind_speed_unit": "mph",
+                "timezone": "auto",
             },
         )
         resp.raise_for_status()
