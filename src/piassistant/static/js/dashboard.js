@@ -359,6 +359,7 @@ function toggleNewsFields() {
 async function addNewsFeed(e) {
   e.preventDefault();
   const name = document.getElementById("news-feed-name").value.trim();
+  const provider = document.getElementById("news-feed-provider").value;
   const type = document.getElementById("news-feed-type").value;
   const country = document.getElementById("news-feed-country").value.trim();
   const query = document.getElementById("news-feed-query").value.trim();
@@ -368,7 +369,7 @@ async function addNewsFeed(e) {
   await fetch("/api/news/feeds", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, type, country: type === "headlines" ? country : "", query: type === "search" ? query : "" }),
+    body: JSON.stringify({ name, type, provider, country: type === "headlines" ? country : "", query: type === "search" ? query : "" }),
   });
   document.getElementById("news-feed-name").value = "";
   document.getElementById("news-feed-query").value = "";

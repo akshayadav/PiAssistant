@@ -74,6 +74,13 @@ class StorageService(BaseService):
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("PRAGMA foreign_keys = ON")
             await db.executescript(SCHEMA)
+            # Migrations for columns added after initial schema
+            try:
+                await db.execute(
+                    "ALTER TABLE news_feeds ADD COLUMN provider TEXT DEFAULT 'newsapi'"
+                )
+            except Exception:
+                pass  # Column already exists
             await db.commit()
 
     async def health_check(self) -> dict:

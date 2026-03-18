@@ -1,11 +1,15 @@
 import asyncio
 import logging
 
+import httpx
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Shared httpx client for Newsdata.io calls
+_newsdata_client = httpx.AsyncClient(timeout=10)
 
 
 # --- Weather Cities ---
@@ -112,10 +116,11 @@ async def delete_weather_city(request: Request, city_id: int):
 # --- News Feeds ---
 
 DEFAULT_NEWS_FEEDS = [
-    ("Global", "headlines", "us", "general", "", 10),
-    ("India", "headlines", "in", "general", "", 10),
-    ("Indore", "search", "", "general", "Indore India", 3),
-    ("Santa Clara", "search", "", "general", "Santa Clara California", 3),
+    # (name, type, country, category, query, count, provider)
+    ("Global", "headlines", "us", "general", "", 10, "newsapi"),
+    ("India", "headlines", "in", "general", "", 10, "newsdata"),
+    ("Indore", "search", "", "general", "Indore India", 3, "newsapi"),
+    ("Santa Clara", "search", "", "general", "Santa Clara California", 3, "newsapi"),
 ]
 
 
@@ -126,6 +131,32 @@ class NewsFeedRequest(BaseModel):
     category: str = "general"
     query: str = ""
     count: int = 5
+    provider: str = "newsapi"  # "newsapi" or "newsdata"
+
+
+async def fetch_newsdata(api_key: str, country: str = "", query: str = "",
+                         count: int = 10) -> list[dict]:
+    """Fetch articles from Newsdata.io API."""
+    params = {"apikey": api_key, "language": "en"}
+    if country:
+        params["country"] = country
+    if query:
+        params["q"] = query
+    resp = await _newsdata_client.get(
+        "https://newsdata.io/api/1/latest", params=params
+    )
+    resp.raise_for_status()
+    raw = resp.json()
+    articles = []
+    for a in raw.get("results", [])[:count]:
+        articles.append({
+            "title": a.get("title", ""),
+            "description": a.get("description", ""),
+            "source": a.get("source_name", ""),
+            "url": a.get("link", ""),
+            "published_at": a.get("pubDate", ""),
+        })
+    return articles
 
 
 @router.get("/news/feeds")
@@ -139,7 +170,8 @@ async def get_news_feeds(request: Request):
     db = await storage.connect()
     try:
         cursor = await db.execute(
-            "SELECT id, name, type, country, category, query, count FROM news_feeds ORDER BY id"
+            "SELECT id, name, type, country, category, query, count, provider "
+            "FROM news_feeds ORDER BY id"
         )
         rows = await cursor.fetchall()
     finally:
@@ -149,29 +181,35 @@ async def get_news_feeds(request: Request):
         # Seed defaults on first access
         db = await storage.connect()
         try:
-            for name, ftype, country, category, query, count in DEFAULT_NEWS_FEEDS:
+            for name, ftype, country, category, query, count, provider in DEFAULT_NEWS_FEEDS:
                 await db.execute(
-                    "INSERT INTO news_feeds (name, type, country, category, query, count) "
-                    "VALUES (?, ?, ?, ?, ?, ?)",
-                    (name, ftype, country, category, query, count),
+                    "INSERT INTO news_feeds (name, type, country, category, query, count, provider) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (name, ftype, country, category, query, count, provider),
                 )
             await db.commit()
             cursor = await db.execute(
-                "SELECT id, name, type, country, category, query, count FROM news_feeds ORDER BY id"
+                "SELECT id, name, type, country, category, query, count, provider "
+                "FROM news_feeds ORDER BY id"
             )
             rows = await cursor.fetchall()
         finally:
             await db.close()
 
     dashboard_ttl = settings.news_dashboard_ttl
+    newsdata_key = settings.newsdata_api_key
 
-    async def fetch_feed(feed_id, name, ftype, country, category, query, count):
+    async def fetch_feed(feed_id, name, ftype, country, category, query, count, provider):
         cache_key = f"news_dashboard:{feed_id}"
         cached = await cache.get(cache_key)
         if cached is not None:
             return {"id": feed_id, "name": name, "articles": cached}
         try:
-            if ftype == "headlines":
+            if provider == "newsdata" and newsdata_key:
+                articles = await fetch_newsdata(
+                    api_key=newsdata_key, country=country, query=query, count=count
+                )
+            elif ftype == "headlines":
                 articles = await news.get_headlines(
                     category=category, country=country, count=count
                 )
@@ -184,7 +222,7 @@ async def get_news_feeds(request: Request):
             return {"id": feed_id, "name": name, "articles": []}
 
     tasks = [
-        fetch_feed(r[0], r[1], r[2], r[3], r[4], r[5], r[6]) for r in rows
+        fetch_feed(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7]) for r in rows
     ]
     results = await asyncio.gather(*tasks)
     return list(results)
@@ -196,9 +234,9 @@ async def add_news_feed(request: Request, body: NewsFeedRequest):
     db = await storage.connect()
     try:
         cursor = await db.execute(
-            "INSERT INTO news_feeds (name, type, country, category, query, count) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
-            (body.name, body.type, body.country, body.category, body.query, body.count),
+            "INSERT INTO news_feeds (name, type, country, category, query, count, provider) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (body.name, body.type, body.country, body.category, body.query, body.count, body.provider),
         )
         await db.commit()
         return {"id": cursor.lastrowid, "name": body.name}

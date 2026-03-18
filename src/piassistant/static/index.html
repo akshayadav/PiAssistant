@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PiAssistant</title>
-<link rel="stylesheet" href="/static/css/dashboard.css?v=5">
+<link rel="stylesheet" href="/static/css/dashboard.css?v=6">
 </head>
 <body>
 
@@ -60,6 +60,10 @@
     <div id="news-add-form" style="display:none;margin-bottom:8px">
       <form onsubmit="addNewsFeed(event)" style="display:flex;gap:6px;flex-wrap:wrap">
         <input type="text" id="news-feed-name" placeholder="Feed name" style="width:100px;padding:4px 8px;background:var(--bg);border:1px solid #ffffff20;border-radius:6px;color:var(--text);font-size:0.8rem">
+        <select id="news-feed-provider" style="padding:4px 8px;background:var(--bg);border:1px solid #ffffff20;border-radius:6px;color:var(--text);font-size:0.8rem">
+          <option value="newsapi">NewsAPI</option>
+          <option value="newsdata">Newsdata.io</option>
+        </select>
         <select id="news-feed-type" onchange="toggleNewsFields()" style="padding:4px 8px;background:var(--bg);border:1px solid #ffffff20;border-radius:6px;color:var(--text);font-size:0.8rem">
           <option value="headlines">Headlines</option>
           <option value="search">Search</option>
@@ -105,7 +109,7 @@
   <button onclick="dismissTimerAlert()">Dismiss</button>
 </div>
 
-<script src="/static/js/dashboard.js?v=5"></script>
+<script src="/static/js/dashboard.js?v=6"></script>
 
 </body>
 </html>

@@ -11,8 +11,9 @@ class Settings(BaseSettings):
     default_lat: float = 43.49
     default_lon: float = -112.03
 
-    # News (NewsAPI)
-    newsapi_key: str = ""
+    # News
+    newsapi_key: str = ""          # NewsAPI.org
+    newsdata_api_key: str = ""     # Newsdata.io
 
     # Server
     host: str = "0.0.0.0"
