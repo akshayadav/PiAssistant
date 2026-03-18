@@ -90,16 +90,15 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
 }
 .weather-cities {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
 }
 .weather-city-card {
   background: var(--surface2);
   border-radius: 8px;
   padding: 8px 10px;
   min-width: 130px;
-  flex-shrink: 0;
+  flex: 1 1 130px;
   position: relative;
 }
 .weather-city-name {
