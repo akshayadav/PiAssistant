@@ -219,6 +219,7 @@ function statusBadge(status) {
   else if (status.startsWith("running")) cls = "badge-running";
   else if (status === "waiting for input") cls = "badge-waiting";
   else if (status === "needs attention") cls = "badge-attention";
+  else if (status === "idle") cls = "badge-idle";
   return `<span class="badge ${cls}">${status}</span>`;
 }
 

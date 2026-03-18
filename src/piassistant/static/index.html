@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PiAssistant</title>
-<link rel="stylesheet" href="/static/css/dashboard.css?v=8">
+<link rel="stylesheet" href="/static/css/dashboard.css?v=9">
 </head>
 <body>
 
@@ -37,7 +37,9 @@
 
   <!-- Sessions -->
   <div class="widget" id="sessions-widget">
-    <h2>Claude Code <span class="count" id="sessions-count">0</span></h2>
+    <h2>Claude Code <span class="count" id="sessions-count">0</span>
+      <button class="widget-add-btn" onclick="fetchSessions()" title="Refresh sessions">↻</button>
+    </h2>
     <div id="sessions-content"><div class="empty-state">No active sessions</div></div>
   </div>
 
@@ -113,7 +115,7 @@
   <button onclick="dismissTimerAlert()">Dismiss</button>
 </div>
 
-<script src="/static/js/dashboard.js?v=8"></script>
+<script src="/static/js/dashboard.js?v=9"></script>
 
 </body>
 </html>

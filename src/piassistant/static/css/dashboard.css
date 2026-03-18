@@ -177,6 +177,7 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   animation: pulse 1s infinite;
 }
 .badge-active { background: var(--surface); color: var(--text); }
+.badge-idle { background: #334155; color: var(--text-muted); }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }

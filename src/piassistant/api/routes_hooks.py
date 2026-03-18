@@ -10,8 +10,10 @@ router = APIRouter()
 # In-memory session store: {session_id: session_dict}
 _sessions: dict[str, dict] = {}
 
-# Auto-expire sessions idle > 30 minutes
-SESSION_TIMEOUT = 1800
+# Mark sessions idle after 5 minutes of no activity
+IDLE_TIMEOUT = 300
+# Remove sessions after 24 hours of no activity
+EXPIRE_TIMEOUT = 86400
 
 
 def _project_name(cwd: str) -> str:
@@ -22,9 +24,17 @@ def _project_name(cwd: str) -> str:
 
 
 def _clean_expired():
-    """Remove sessions idle for > SESSION_TIMEOUT."""
-    cutoff = time.time() - SESSION_TIMEOUT
-    expired = [sid for sid, s in _sessions.items() if s["last_activity"] < cutoff]
+    """Mark idle sessions and remove very old ones."""
+    now = time.time()
+    idle_cutoff = now - IDLE_TIMEOUT
+    expire_cutoff = now - EXPIRE_TIMEOUT
+    expired = []
+    for sid, s in _sessions.items():
+        if s["last_activity"] < expire_cutoff:
+            expired.append(sid)
+        elif s["last_activity"] < idle_cutoff and s["status"] != "idle":
+            s["status"] = "idle"
+            s["current_tool"] = ""
     for sid in expired:
         del _sessions[sid]
 
