@@ -173,6 +173,8 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] 31 tests passing
 - [x] Claude Code hooks configured on Mac — `~/.claude/settings.json` pushes 6 event types to Pi via HTTP hooks with X-Machine header
 - [x] Walkthrough doc: `docs/claude-session-monitor.md`
+- [x] News dashboard widget — 4 configurable feeds (Global, India, Indore, Santa Clara), 6-hour cache TTL, add/remove from UI
+- [x] Walkthrough doc: `docs/news-dashboard-widget.md`
 
 ### Up Next (in priority order)
 1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail

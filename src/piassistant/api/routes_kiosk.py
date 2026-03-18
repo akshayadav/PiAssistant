@@ -1,9 +1,11 @@
 import asyncio
+import logging
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 # --- Weather Cities ---
@@ -102,6 +104,118 @@ async def delete_weather_city(request: Request, city_id: int):
     try:
         cursor = await db.execute("DELETE FROM weather_cities WHERE id = ?", (city_id,))
         await db.commit()
+        return {"deleted": cursor.rowcount > 0}
+    finally:
+        await db.close()
+
+
+# --- News Feeds ---
+
+DEFAULT_NEWS_FEEDS = [
+    ("Global", "headlines", "us", "general", "", 10),
+    ("India", "headlines", "in", "general", "", 10),
+    ("Indore", "search", "", "general", "Indore India", 3),
+    ("Santa Clara", "search", "", "general", "Santa Clara California", 3),
+]
+
+
+class NewsFeedRequest(BaseModel):
+    name: str
+    type: str = "headlines"  # "headlines" or "search"
+    country: str = ""
+    category: str = "general"
+    query: str = ""
+    count: int = 5
+
+
+@router.get("/news/feeds")
+async def get_news_feeds(request: Request):
+    """Get all configured news feeds with cached articles."""
+    storage = request.app.state.registry.get("storage")
+    news = request.app.state.registry.get("news")
+    cache = request.app.state.registry.get("cache")
+    settings = request.app.state.settings
+
+    db = await storage.connect()
+    try:
+        cursor = await db.execute(
+            "SELECT id, name, type, country, category, query, count FROM news_feeds ORDER BY id"
+        )
+        rows = await cursor.fetchall()
+    finally:
+        await db.close()
+
+    if not rows:
+        # Seed defaults on first access
+        db = await storage.connect()
+        try:
+            for name, ftype, country, category, query, count in DEFAULT_NEWS_FEEDS:
+                await db.execute(
+                    "INSERT INTO news_feeds (name, type, country, category, query, count) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (name, ftype, country, category, query, count),
+                )
+            await db.commit()
+            cursor = await db.execute(
+                "SELECT id, name, type, country, category, query, count FROM news_feeds ORDER BY id"
+            )
+            rows = await cursor.fetchall()
+        finally:
+            await db.close()
+
+    dashboard_ttl = settings.news_dashboard_ttl
+
+    async def fetch_feed(feed_id, name, ftype, country, category, query, count):
+        cache_key = f"news_dashboard:{feed_id}"
+        cached = await cache.get(cache_key)
+        if cached is not None:
+            return {"id": feed_id, "name": name, "articles": cached}
+        try:
+            if ftype == "headlines":
+                articles = await news.get_headlines(
+                    category=category, country=country, count=count
+                )
+            else:
+                articles = await news.search(query=query, count=count)
+            await cache.set(cache_key, articles, dashboard_ttl)
+            return {"id": feed_id, "name": name, "articles": articles}
+        except Exception as e:
+            logger.warning("News feed %s failed: %s", name, e)
+            return {"id": feed_id, "name": name, "articles": []}
+
+    tasks = [
+        fetch_feed(r[0], r[1], r[2], r[3], r[4], r[5], r[6]) for r in rows
+    ]
+    results = await asyncio.gather(*tasks)
+    return list(results)
+
+
+@router.post("/news/feeds")
+async def add_news_feed(request: Request, body: NewsFeedRequest):
+    storage = request.app.state.registry.get("storage")
+    db = await storage.connect()
+    try:
+        cursor = await db.execute(
+            "INSERT INTO news_feeds (name, type, country, category, query, count) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (body.name, body.type, body.country, body.category, body.query, body.count),
+        )
+        await db.commit()
+        return {"id": cursor.lastrowid, "name": body.name}
+    finally:
+        await db.close()
+
+
+@router.delete("/news/feeds/{feed_id}")
+async def delete_news_feed(request: Request, feed_id: int):
+    storage = request.app.state.registry.get("storage")
+    cache = request.app.state.registry.get("cache")
+    db = await storage.connect()
+    try:
+        cursor = await db.execute("DELETE FROM news_feeds WHERE id = ?", (feed_id,))
+        await db.commit()
+        # Clear cached articles for this feed
+        await cache.invalidate(f"news_dashboard:{feed_id}")
         return {"deleted": cursor.rowcount > 0}
     finally:
         await db.close()

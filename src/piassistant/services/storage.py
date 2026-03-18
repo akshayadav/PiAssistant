@@ -47,6 +47,17 @@ CREATE TABLE IF NOT EXISTS weather_cities (
     display_name TEXT NOT NULL,
     created_at TEXT DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS news_feeds (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    country TEXT DEFAULT '',
+    category TEXT DEFAULT 'general',
+    query TEXT DEFAULT '',
+    count INTEGER DEFAULT 5,
+    created_at TEXT DEFAULT (datetime('now'))
+);
 """
 
 

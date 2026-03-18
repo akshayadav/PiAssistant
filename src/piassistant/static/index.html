@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PiAssistant</title>
-<link rel="stylesheet" href="/static/css/dashboard.css?v=4">
+<link rel="stylesheet" href="/static/css/dashboard.css?v=5">
 </head>
 <body>
 
@@ -52,6 +52,26 @@
     <div id="reminders-content"><div class="empty-state">No reminders</div></div>
   </div>
 
+  <!-- News -->
+  <div class="widget" id="news-widget" style="grid-column: span 2">
+    <h2>News <span class="count" id="news-count">0</span>
+      <button class="widget-add-btn" onclick="toggleNewsForm()" title="Add feed">+</button>
+    </h2>
+    <div id="news-add-form" style="display:none;margin-bottom:8px">
+      <form onsubmit="addNewsFeed(event)" style="display:flex;gap:6px;flex-wrap:wrap">
+        <input type="text" id="news-feed-name" placeholder="Feed name" style="width:100px;padding:4px 8px;background:var(--bg);border:1px solid #ffffff20;border-radius:6px;color:var(--text);font-size:0.8rem">
+        <select id="news-feed-type" onchange="toggleNewsFields()" style="padding:4px 8px;background:var(--bg);border:1px solid #ffffff20;border-radius:6px;color:var(--text);font-size:0.8rem">
+          <option value="headlines">Headlines</option>
+          <option value="search">Search</option>
+        </select>
+        <input type="text" id="news-feed-country" placeholder="Country (us, in)" value="us" style="width:60px;padding:4px 8px;background:var(--bg);border:1px solid #ffffff20;border-radius:6px;color:var(--text);font-size:0.8rem">
+        <input type="text" id="news-feed-query" placeholder="Search query" style="display:none;width:140px;padding:4px 8px;background:var(--bg);border:1px solid #ffffff20;border-radius:6px;color:var(--text);font-size:0.8rem">
+        <button type="submit" style="padding:4px 10px;background:var(--accent);border:none;border-radius:6px;color:white;font-size:0.8rem;cursor:pointer">Add</button>
+      </form>
+    </div>
+    <div id="news-content"><div class="empty-state">Loading...</div></div>
+  </div>
+
   <!-- Grocery -->
   <div class="widget" id="grocery-widget" style="grid-column: span 2">
     <h2>Grocery <span class="count" id="grocery-count">0</span></h2>
@@ -85,7 +105,7 @@
   <button onclick="dismissTimerAlert()">Dismiss</button>
 </div>
 
-<script src="/static/js/dashboard.js?v=4"></script>
+<script src="/static/js/dashboard.js?v=5"></script>
 
 </body>
 </html>

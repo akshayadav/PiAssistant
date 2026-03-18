@@ -306,6 +306,81 @@ function dismissTimerAlert() {
   timerAlert.style.display = "none";
 }
 
+// === News Widget ===
+
+async function fetchNews() {
+  const el = document.getElementById("news-content");
+  const countEl = document.getElementById("news-count");
+  try {
+    const res = await fetch("/api/news/feeds");
+    if (!res.ok) throw new Error();
+    const feeds = await res.json();
+    const totalArticles = feeds.reduce((s, f) => s + f.articles.length, 0);
+    countEl.textContent = totalArticles;
+
+    if (feeds.length === 0) {
+      el.innerHTML = '<div class="empty-state">No news feeds configured</div>';
+      return;
+    }
+
+    el.innerHTML = '<div class="news-feeds">' + feeds.map(f => `
+      <div class="news-feed-section">
+        <button class="news-feed-remove" onclick="removeNewsFeed(${f.id})" title="Remove">&times;</button>
+        <div class="news-feed-name">${f.name}</div>
+        ${f.articles.length === 0
+          ? '<div class="empty-state">No articles</div>'
+          : f.articles.map(a => `
+            <div class="news-headline">
+              ${a.title} <span class="news-source">${a.source}</span>
+            </div>
+          `).join("")
+        }
+      </div>
+    `).join("") + '</div>';
+  } catch {
+    el.innerHTML = '<div class="empty-state">News unavailable</div>';
+  }
+}
+
+function toggleNewsForm() {
+  const form = document.getElementById("news-add-form");
+  form.style.display = form.style.display === "none" ? "block" : "none";
+  if (form.style.display === "block") {
+    document.getElementById("news-feed-name").focus();
+  }
+}
+
+function toggleNewsFields() {
+  const type = document.getElementById("news-feed-type").value;
+  document.getElementById("news-feed-country").style.display = type === "headlines" ? "" : "none";
+  document.getElementById("news-feed-query").style.display = type === "search" ? "" : "none";
+}
+
+async function addNewsFeed(e) {
+  e.preventDefault();
+  const name = document.getElementById("news-feed-name").value.trim();
+  const type = document.getElementById("news-feed-type").value;
+  const country = document.getElementById("news-feed-country").value.trim();
+  const query = document.getElementById("news-feed-query").value.trim();
+  if (!name) return;
+  if (type === "search" && !query) return;
+
+  await fetch("/api/news/feeds", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, type, country: type === "headlines" ? country : "", query: type === "search" ? query : "" }),
+  });
+  document.getElementById("news-feed-name").value = "";
+  document.getElementById("news-feed-query").value = "";
+  document.getElementById("news-add-form").style.display = "none";
+  fetchNews();
+}
+
+async function removeNewsFeed(id) {
+  await fetch(`/api/news/feeds/${id}`, { method: "DELETE" });
+  fetchNews();
+}
+
 // === Grocery Widget ===
 
 async function fetchGrocery() {
@@ -453,6 +528,7 @@ function refreshAll() {
   fetchWeather();
   fetchSessions();
   fetchTimers();
+  fetchNews();
   fetchGrocery();
   fetchReminders();
   fetchNotes();
@@ -467,6 +543,7 @@ refreshAll();
 // Polling intervals
 setInterval(checkHealth, 30000);
 setInterval(fetchWeather, 300000);    // 5 min
+setInterval(fetchNews, 1800000);      // 30 min
 setInterval(fetchSessions, 2000);     // 2 sec
 setInterval(fetchTimers, 1000);       // 1 sec
 setInterval(fetchGrocery, 30000);     // 30 sec

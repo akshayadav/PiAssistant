@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     # Cache TTLs (seconds)
     weather_cache_ttl: int = 900   # 15 minutes
     news_cache_ttl: int = 1800     # 30 minutes
+    news_dashboard_ttl: int = 21600  # 6 hours for dashboard feeds
 
     # Database
     db_path: str = "data/piassistant.db"
