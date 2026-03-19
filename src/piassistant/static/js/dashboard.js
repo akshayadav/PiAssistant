@@ -130,6 +130,58 @@ async function checkHealth() {
   }
 }
 
+// === Calendar Widget ===
+
+async function fetchCalendar() {
+  const el = document.getElementById("calendar-content");
+  const countEl = document.getElementById("calendar-count");
+  try {
+    const res = await fetch("/api/calendar/events?days=7");
+    if (!res.ok) throw new Error();
+    const events = await res.json();
+    countEl.textContent = events.length;
+
+    if (events.length === 0) {
+      el.innerHTML = '<div class="empty-state">No upcoming events</div>';
+      return;
+    }
+
+    // Group by date
+    const grouped = {};
+    for (const e of events) {
+      const dateStr = e.start.substring(0, 10);
+      if (!grouped[dateStr]) grouped[dateStr] = [];
+      grouped[dateStr].push(e);
+    }
+
+    el.innerHTML = '<div class="calendar-timeline">' + Object.entries(grouped).map(([dateStr, evts]) => {
+      const d = new Date(dateStr + "T00:00:00");
+      const today = new Date();
+      const isToday = d.toDateString() === today.toDateString();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      const isTomorrow = d.toDateString() === tomorrow.toDateString();
+      const label = isToday ? "Today" : isTomorrow ? "Tomorrow" : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+      return `
+        <div class="cal-date-group">
+          <div class="cal-date-label${isToday ? ' cal-today' : ''}">${label}</div>
+          ${evts.map(e => {
+            const timeStr = e.all_day ? "All day" : new Date(e.start).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+            const srcClass = e.source === "google" ? "cal-google" : "cal-icloud";
+            return `
+              <div class="cal-event ${srcClass}">
+                <span class="cal-time">${timeStr}</span>
+                <span class="cal-summary">${e.summary}</span>
+              </div>`;
+          }).join("")}
+        </div>`;
+    }).join("") + '</div>';
+  } catch {
+    el.innerHTML = '<div class="empty-state">Calendar unavailable</div>';
+  }
+}
+
 // === Weather Widget ===
 
 async function fetchWeather() {
@@ -248,6 +300,111 @@ async function fetchSessions() {
   } catch {
     el.innerHTML = '<div class="empty-state">Sessions unavailable</div>';
   }
+}
+
+// === System Monitor Widget ===
+
+function formatUptime(seconds) {
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function sysBar(label, percent, detail) {
+  const cls = percent > 85 ? "bar-red" : percent > 60 ? "bar-yellow" : "bar-green";
+  return `
+    <div class="sys-metric">
+      <div class="sys-label"><span>${label}</span><span>${detail}</span></div>
+      <div class="sys-bar"><div class="sys-bar-fill ${cls}" style="width:${percent}%"></div></div>
+    </div>`;
+}
+
+async function fetchSystem() {
+  const el = document.getElementById("system-content");
+  try {
+    const res = await fetch("/api/system");
+    if (!res.ok) throw new Error();
+    const s = await res.json();
+
+    const memDetail = `${s.memory_percent}% (${s.memory_available_gb}GB free)`;
+    const diskDetail = `${s.disk_percent}% (${s.disk_free_gb}GB free)`;
+
+    el.innerHTML = `
+      ${sysBar("CPU", s.cpu_percent, s.cpu_percent + "%")}
+      ${sysBar("RAM", s.memory_percent, memDetail)}
+      ${sysBar("Disk", s.disk_percent, diskDetail)}
+      <div class="sys-info">
+        ${s.cpu_temp_c !== null ? `<span>Temp: ${s.cpu_temp_c}&deg;C</span>` : ""}
+        <span>Up: ${formatUptime(s.uptime_seconds)}</span>
+        <span>${s.platform}</span>
+      </div>
+    `;
+  } catch {
+    el.innerHTML = '<div class="empty-state">System unavailable</div>';
+  }
+}
+
+// === Network Widget ===
+
+async function fetchNetwork() {
+  const el = document.getElementById("network-content");
+  const countEl = document.getElementById("network-count");
+  try {
+    const res = await fetch("/api/network/devices");
+    if (!res.ok) throw new Error();
+    const devices = await res.json();
+    const onlineCount = devices.filter(d => d.is_online).length;
+    countEl.textContent = `${onlineCount}/${devices.length}`;
+
+    if (devices.length === 0) {
+      el.innerHTML = '<div class="empty-state">No devices tracked</div>';
+      return;
+    }
+
+    el.innerHTML = devices.map(d => `
+      <div class="network-device">
+        <span class="net-status ${d.is_online ? 'net-online' : 'net-offline'}"></span>
+        <span class="net-name">${d.name}</span>
+        <span class="net-host">${d.hostname}</span>
+        ${d.last_seen ? `<span class="net-seen">${new Date(d.last_seen).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}</span>` : ""}
+        <button class="net-remove" onclick="removeNetworkDevice(${d.id})" title="Remove">&times;</button>
+      </div>
+    `).join("");
+  } catch {
+    el.innerHTML = '<div class="empty-state">Network unavailable</div>';
+  }
+}
+
+function toggleNetworkForm() {
+  const form = document.getElementById("network-add-form");
+  form.style.display = form.style.display === "none" ? "block" : "none";
+  if (form.style.display === "block") {
+    document.getElementById("network-device-name").focus();
+  }
+}
+
+async function addNetworkDevice(e) {
+  e.preventDefault();
+  const name = document.getElementById("network-device-name").value.trim();
+  const hostname = document.getElementById("network-device-host").value.trim();
+  if (!name || !hostname) return;
+  await fetch("/api/network/devices", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, hostname }),
+  });
+  document.getElementById("network-device-name").value = "";
+  document.getElementById("network-device-host").value = "";
+  document.getElementById("network-add-form").style.display = "none";
+  fetchNetwork();
+}
+
+async function removeNetworkDevice(id) {
+  await fetch(`/api/network/devices/${id}`, { method: "DELETE" });
+  fetchNetwork();
 }
 
 // === Timers Widget ===
@@ -482,6 +639,23 @@ async function refreshOrders() {
   fetchOrders();
 }
 
+// === Quote Widget ===
+
+async function fetchQuote() {
+  const el = document.getElementById("quote-content");
+  try {
+    const res = await fetch("/api/quote");
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    el.innerHTML = `
+      <div class="quote-text">${data.quote}</div>
+      <div class="quote-author">&mdash; ${data.author}</div>
+    `;
+  } catch {
+    el.innerHTML = '<div class="empty-state">Quote unavailable</div>';
+  }
+}
+
 // === Grocery Widget ===
 
 async function fetchGrocery() {
@@ -626,13 +800,17 @@ async function completeTodo(id) {
 // === Refresh all widgets ===
 
 function refreshAll() {
+  fetchCalendar();
   fetchWeather();
   fetchSessions();
+  fetchSystem();
+  fetchNetwork();
   fetchTimers();
   fetchNews();
   fetchOrders();
   fetchGrocery();
   fetchReminders();
+  fetchQuote();
   fetchNotes();
   fetchTodos();
 }
@@ -653,3 +831,7 @@ setInterval(fetchGrocery, 30000);     // 30 sec
 setInterval(fetchReminders, 30000);   // 30 sec
 setInterval(fetchNotes, 30000);       // 30 sec
 setInterval(fetchTodos, 30000);       // 30 sec
+setInterval(fetchQuote, 3600000);     // 1 hour
+setInterval(fetchSystem, 10000);      // 10 sec
+setInterval(fetchNetwork, 30000);     // 30 sec
+setInterval(fetchCalendar, 300000);   // 5 min

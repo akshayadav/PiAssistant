@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PiAssistant</title>
-<link rel="stylesheet" href="/static/css/dashboard.css?v=10">
+<link rel="stylesheet" href="/static/css/dashboard.css?v=11">
 </head>
 <body>
 
@@ -21,6 +21,12 @@
 
 <div id="main-scroll">
 <div id="widgets">
+  <!-- Calendar -->
+  <div class="widget" id="calendar-widget" style="grid-column: span 2">
+    <h2>Calendar <span class="count" id="calendar-count">0</span></h2>
+    <div id="calendar-content"><div class="empty-state">Loading...</div></div>
+  </div>
+
   <!-- Weather -->
   <div class="widget" id="weather-widget" style="grid-column: span 2">
     <h2>Weather <span class="count" id="weather-count">0</span>
@@ -41,6 +47,27 @@
       <button class="widget-add-btn" onclick="fetchSessions()" title="Refresh sessions">↻</button>
     </h2>
     <div id="sessions-content"><div class="empty-state">No active sessions</div></div>
+  </div>
+
+  <!-- System Monitor -->
+  <div class="widget" id="system-widget">
+    <h2>System</h2>
+    <div id="system-content"><div class="empty-state">Loading...</div></div>
+  </div>
+
+  <!-- Network Devices -->
+  <div class="widget" id="network-widget">
+    <h2>Network <span class="count" id="network-count">0</span>
+      <button class="widget-add-btn" onclick="toggleNetworkForm()" title="Add device">+</button>
+    </h2>
+    <div id="network-add-form" style="display:none;margin-bottom:8px">
+      <form onsubmit="addNetworkDevice(event)" style="display:flex;gap:6px">
+        <input type="text" id="network-device-name" placeholder="Name" style="width:80px;padding:4px 8px;background:var(--bg);border:1px solid #ffffff20;border-radius:6px;color:var(--text);font-size:0.8rem">
+        <input type="text" id="network-device-host" placeholder="hostname or IP" style="flex:1;padding:4px 8px;background:var(--bg);border:1px solid #ffffff20;border-radius:6px;color:var(--text);font-size:0.8rem">
+        <button type="submit" style="padding:4px 10px;background:var(--accent);border:none;border-radius:6px;color:white;font-size:0.8rem;cursor:pointer">Add</button>
+      </form>
+    </div>
+    <div id="network-content"><div class="empty-state">Loading...</div></div>
   </div>
 
   <!-- Timers -->
@@ -94,6 +121,12 @@
     <div id="grocery-content"><div class="empty-state">Grocery list empty</div></div>
   </div>
 
+  <!-- Daily Quote -->
+  <div class="widget" id="quote-widget">
+    <h2>Daily Quote</h2>
+    <div id="quote-content"><div class="empty-state">Loading...</div></div>
+  </div>
+
   <!-- Notes -->
   <div class="widget" id="notes-widget">
     <h2>Notes</h2>
@@ -123,7 +156,7 @@
   <button onclick="dismissTimerAlert()">Dismiss</button>
 </div>
 
-<script src="/static/js/dashboard.js?v=10"></script>
+<script src="/static/js/dashboard.js?v=11"></script>
 
 </body>
 </html>

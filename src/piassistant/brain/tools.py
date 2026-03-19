@@ -261,6 +261,93 @@ TOOL_DEFINITIONS = [
             "properties": {},
         },
     },
+    # --- Calendar ---
+    {
+        "name": "get_calendar_events",
+        "description": "Get upcoming calendar events from Google Calendar and/or iCloud.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "integer",
+                    "description": "Number of days to look ahead (default 7)",
+                    "default": 7,
+                },
+            },
+        },
+    },
+    {
+        "name": "add_calendar_event",
+        "description": "Add an event to Google Calendar.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "summary": {
+                    "type": "string",
+                    "description": "Event title",
+                },
+                "start": {
+                    "type": "string",
+                    "description": "Start time in ISO format, e.g. '2026-03-20T10:00:00'",
+                },
+                "end": {
+                    "type": "string",
+                    "description": "End time in ISO format, e.g. '2026-03-20T11:00:00'",
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Optional event description",
+                    "default": "",
+                },
+            },
+            "required": ["summary", "start", "end"],
+        },
+    },
+    # --- Network ---
+    {
+        "name": "list_network_devices",
+        "description": "List all tracked network devices and their online/offline status.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+        },
+    },
+    {
+        "name": "add_network_device",
+        "description": "Add a device to the network monitor.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Friendly name, e.g. 'Living Room Pico'",
+                },
+                "hostname": {
+                    "type": "string",
+                    "description": "Hostname or IP, e.g. 'pico-w-1.local' or '10.0.0.50'",
+                },
+            },
+            "required": ["name", "hostname"],
+        },
+    },
+    # --- System Monitor ---
+    {
+        "name": "get_system_status",
+        "description": "Get current system status: CPU usage, memory, disk, temperature, uptime. Use when user asks about system health, performance, or resource usage.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+        },
+    },
+    # --- Quote ---
+    {
+        "name": "get_daily_quote",
+        "description": "Get today's inspirational quote. Use when user asks for a quote, inspiration, or motivation.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+        },
+    },
     # --- To-Do ---
     {
         "name": "todo_add",

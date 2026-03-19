@@ -270,6 +270,70 @@ async def delete_news_feed(request: Request, feed_id: int):
         await db.close()
 
 
+# --- Calendar ---
+
+@router.get("/calendar/events")
+async def get_calendar_events(request: Request, days: int = 7):
+    """Get upcoming calendar events from Google and/or iCloud."""
+    calendar = request.app.state.registry.get("calendar")
+    return await calendar.get_events(days=days)
+
+
+# --- Network Devices ---
+
+class NetworkDeviceRequest(BaseModel):
+    name: str
+    hostname: str
+    ip: str = ""
+    device_type: str = "other"
+
+
+@router.get("/network/devices")
+async def list_network_devices(request: Request):
+    """List all tracked network devices with online status."""
+    network = request.app.state.registry.get("network")
+    return await network.list_devices()
+
+
+@router.post("/network/devices")
+async def add_network_device(request: Request, body: NetworkDeviceRequest):
+    network = request.app.state.registry.get("network")
+    return await network.add_device(
+        name=body.name, hostname=body.hostname, ip=body.ip, device_type=body.device_type
+    )
+
+
+@router.delete("/network/devices/{device_id}")
+async def remove_network_device(request: Request, device_id: int):
+    network = request.app.state.registry.get("network")
+    return {"deleted": await network.remove_device(device_id)}
+
+
+@router.post("/network/ping")
+async def ping_all_devices(request: Request):
+    """Manually trigger ping of all devices."""
+    network = request.app.state.registry.get("network")
+    return await network.ping_all()
+
+
+# --- System Monitor ---
+
+@router.get("/system")
+async def get_system_status(request: Request):
+    """Get current system metrics (CPU, RAM, disk, temp)."""
+    sysmon = request.app.state.registry.get("sysmon")
+    return await sysmon.get_status()
+
+
+# --- Quote ---
+
+@router.get("/quote")
+async def get_daily_quote(request: Request):
+    """Get the daily inspirational quote."""
+    quote = request.app.state.registry.get("quote")
+    return await quote.get_daily_quote()
+
+
 # --- Orders ---
 
 @router.get("/orders")

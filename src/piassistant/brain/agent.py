@@ -13,6 +13,10 @@ from ..services.timers import TimerService
 from ..services.reminders import ReminderService
 from ..services.todo import TodoService
 from ..services.orders import AmazonOrdersService
+from ..services.quote import QuoteService
+from ..services.sysmon import SystemMonitorService
+from ..services.network import NetworkService
+from ..services.calendar import CalendarService
 from .tools import TOOL_DEFINITIONS
 
 
@@ -67,7 +71,11 @@ class Agent:
             f"REMINDERS: Convert relative times to ISO format (e.g. 'tomorrow 10am' → actual date).\n"
             f"NOTES: Use for 'remember that...', 'note that...', or when user wants to save info.\n"
             f"TO-DOS: Use for task management, action items, things to do.\n"
-            f"ORDERS: Use get_orders to check Amazon delivery status. Use refresh_orders only when explicitly asked.\n\n"
+            f"ORDERS: Use get_orders to check Amazon delivery status. Use refresh_orders only when explicitly asked.\n"
+            f"QUOTE: Use get_daily_quote when the user asks for a quote, inspiration, or motivation.\n"
+            f"SYSTEM: Use get_system_status for CPU, memory, disk, temperature, or uptime info.\n"
+            f"NETWORK: Use list_network_devices to check device status, add_network_device to monitor new devices.\n"
+            f"CALENDAR: Use get_calendar_events to show upcoming events. Use add_calendar_event to create events.\n\n"
             f"FREE CAPABILITIES (no tools needed — answer directly):\n"
             f"- Unit conversions, cooking measurements\n"
             f"- Recipe suggestions from ingredients\n"
@@ -202,6 +210,41 @@ class Agent:
             todo: TodoService = self.registry.get("todo")
             completed = await todo.complete_item(args["item_id"])
             return {"completed": completed}
+
+        # --- Calendar ---
+        elif name == "get_calendar_events":
+            cal: CalendarService = self.registry.get("calendar")
+            return await cal.get_events(days=args.get("days", 7))
+
+        elif name == "add_calendar_event":
+            cal: CalendarService = self.registry.get("calendar")
+            return await cal.add_event(
+                summary=args["summary"],
+                start=args["start"],
+                end=args["end"],
+                description=args.get("description", ""),
+            )
+
+        # --- Network ---
+        elif name == "list_network_devices":
+            network: NetworkService = self.registry.get("network")
+            return await network.list_devices()
+
+        elif name == "add_network_device":
+            network: NetworkService = self.registry.get("network")
+            return await network.add_device(
+                name=args["name"], hostname=args["hostname"],
+            )
+
+        # --- System Monitor ---
+        elif name == "get_system_status":
+            sysmon: SystemMonitorService = self.registry.get("sysmon")
+            return await sysmon.get_status()
+
+        # --- Quote ---
+        elif name == "get_daily_quote":
+            quote: QuoteService = self.registry.get("quote")
+            return await quote.get_daily_quote()
 
         # --- Orders ---
         elif name == "get_orders":

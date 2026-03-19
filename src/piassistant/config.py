@@ -34,6 +34,16 @@ class Settings(BaseSettings):
     amazon_refresh_interval: int = 14400   # 4 hours
     amazon_min_refresh_gap: int = 900      # 15 min between manual refreshes
 
+    # Quote
+    quote_cache_ttl: int = 86400  # 24 hours
+
+    # Calendar
+    google_calendar_credentials_json: str = ""
+    google_calendar_token_path: str = "data/google_token.json"
+    icloud_caldav_email: str = ""
+    icloud_caldav_password: str = ""
+    calendar_cache_ttl: int = 900  # 15 minutes
+
     # Assistant
     assistant_name: str = "PiAssistant"
 

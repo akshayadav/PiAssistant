@@ -19,6 +19,11 @@ dependencies = [
     "python-dotenv>=1.0",
     "aiosqlite>=0.19",
     "amazon-orders>=0.0.10",
+    "psutil>=5.9",
+    "google-api-python-client>=2.0",
+    "google-auth-oauthlib>=1.0",
+    "google-auth-httplib2>=0.1",
+    "caldav>=1.0",
 ]
 
 [project.optional-dependencies]

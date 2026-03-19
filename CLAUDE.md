@@ -101,10 +101,14 @@ PiAssistant/
 │       │   ├── grocery.py    # Grocery lists by store
 │       │   ├── timers.py     # In-memory cooking timers (asyncio)
 │       │   ├── reminders.py  # Reminders + notes (SQLite)
-│       │   └── todo.py       # To-do lists (SQLite)
+│       │   ├── todo.py       # To-do lists (SQLite)
+│       │   ├── quote.py      # Daily inspirational quote (zenquotes.io + SQLite)
+│       │   ├── sysmon.py     # System monitor (psutil — CPU/RAM/disk/temp)
+│       │   ├── network.py    # Network device ping monitor (SQLite)
+│       │   └── calendar.py   # Calendar events (Google + iCloud CalDAV)
 │       ├── brain/
 │       │   ├── agent.py      # Tool-use loop: user msg → Claude → tools → response
-│       │   └── tools.py      # Tool definitions for Claude (20 tools)
+│       │   └── tools.py      # Tool definitions for Claude (28 tools)
 │       ├── api/
 │       │   ├── app.py        # FastAPI app factory
 │       │   ├── routes_assistant.py  # /api/chat — human interaction
@@ -168,19 +172,25 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Kiosk features — SQLite persistence, grocery lists (6 default stores), cooking timers, reminders, notes, to-do lists
 - [x] Claude Code session monitor — HTTP hooks receiver, in-memory session tracking, dashboard widget
 - [x] Dashboard overhaul — CSS Grid widget layout (weather, sessions, timers, reminders, grocery, notes, todos, chat)
-- [x] 20 Claude tools (weather 2, news 2, grocery 4, timers 3, reminders 2, notes 2, todos 3)
+- [x] 20 initial Claude tools (weather 2, news 2, grocery 4, timers 3, reminders 2, notes 2, todos 3)
 - [x] Enhanced system prompt with all capabilities + free features (conversions, recipes, math)
-- [x] 31 tests passing
+- [x] 31 initial tests passing
 - [x] Claude Code hooks configured on Mac — `~/.claude/settings.json` pushes 6 event types to Pi via HTTP hooks with X-Machine header
 - [x] Walkthrough doc: `docs/claude-session-monitor.md`
 - [x] News dashboard widget — 4 configurable feeds (Global, India, Indore, Santa Clara), 6-hour cache TTL, add/remove from UI
 - [x] Walkthrough doc: `docs/news-dashboard-widget.md`
 - [x] Read headlines aloud — browser TTS (Web Speech API), ▶ Read / ■ Stop button in news widget header
+- [x] Daily Quote widget — zenquotes.io API, 24h cache, SQLite persistence, fallback quotes
+- [x] Pi System Monitor widget — psutil for CPU/RAM/disk/temp/uptime, 10s cache, color-coded progress bars
+- [x] Network Devices widget — ping-based monitoring, background 60s sweep, add/remove devices, SQLite persistence
+- [x] Calendar widget — Google Calendar OAuth2 + iCloud CalDAV, merged timeline view, color-coded sources
+- [x] 30 Claude tools (weather 2, news 2, calendar 2, network 2, sysmon 1, quote 1, orders 2, grocery 4, timers 3, reminders 2, notes 2, todos 3, system prompt updated)
+- [x] 60 tests passing
 
 ### Up Next (in priority order)
 1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
-3. **Voice (STT/TTS)** — hands-free interaction, offloaded to Mac Mini
-4. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
+2. **Voice (STT/TTS)** — hands-free interaction, offloaded to Mac Mini
+3. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
 
 ### Future
 - Local LLM fallback (Ollama on Mac Mini)
