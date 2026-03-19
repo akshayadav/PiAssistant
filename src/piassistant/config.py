@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     # Database
     db_path: str = "data/piassistant.db"
 
+    # Amazon Orders
+    amazon_email: str = ""
+    amazon_password: str = ""
+    amazon_otp_secret: str = ""
+    amazon_refresh_interval: int = 14400   # 4 hours
+    amazon_min_refresh_gap: int = 900      # 15 min between manual refreshes
+
     # Assistant
     assistant_name: str = "PiAssistant"
 

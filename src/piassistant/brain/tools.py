@@ -73,6 +73,23 @@ TOOL_DEFINITIONS = [
             "required": ["query"],
         },
     },
+    # --- Orders ---
+    {
+        "name": "get_orders",
+        "description": "Get undelivered Amazon orders with delivery status and tracking info.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+        },
+    },
+    {
+        "name": "refresh_orders",
+        "description": "Force refresh Amazon order data from Amazon.com. Use sparingly — only when explicitly asked.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+        },
+    },
     # --- Grocery ---
     {
         "name": "grocery_add",

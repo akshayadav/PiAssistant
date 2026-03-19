@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PiAssistant</title>
-<link rel="stylesheet" href="/static/css/dashboard.css?v=9">
+<link rel="stylesheet" href="/static/css/dashboard.css?v=10">
 </head>
 <body>
 
@@ -80,6 +80,14 @@
     <div id="news-content"><div class="empty-state">Loading...</div></div>
   </div>
 
+  <!-- Orders -->
+  <div class="widget" id="orders-widget" style="grid-column: span 2">
+    <h2>Orders <span class="count" id="orders-count">0</span>
+      <button class="widget-add-btn" onclick="refreshOrders()" title="Refresh from Amazon">↻</button>
+    </h2>
+    <div id="orders-content"><div class="empty-state">Loading...</div></div>
+  </div>
+
   <!-- Grocery -->
   <div class="widget" id="grocery-widget" style="grid-column: span 2">
     <h2>Grocery <span class="count" id="grocery-count">0</span></h2>
@@ -115,7 +123,7 @@
   <button onclick="dismissTimerAlert()">Dismiss</button>
 </div>
 
-<script src="/static/js/dashboard.js?v=9"></script>
+<script src="/static/js/dashboard.js?v=10"></script>
 
 </body>
 </html>

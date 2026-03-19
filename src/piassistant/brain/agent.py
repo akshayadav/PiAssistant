@@ -12,6 +12,7 @@ from ..services.grocery import GroceryService
 from ..services.timers import TimerService
 from ..services.reminders import ReminderService
 from ..services.todo import TodoService
+from ..services.orders import AmazonOrdersService
 from .tools import TOOL_DEFINITIONS
 
 
@@ -65,7 +66,8 @@ class Agent:
             f"TIMERS: Convert user's time to seconds (e.g. '12 minutes' = 720 seconds).\n"
             f"REMINDERS: Convert relative times to ISO format (e.g. 'tomorrow 10am' → actual date).\n"
             f"NOTES: Use for 'remember that...', 'note that...', or when user wants to save info.\n"
-            f"TO-DOS: Use for task management, action items, things to do.\n\n"
+            f"TO-DOS: Use for task management, action items, things to do.\n"
+            f"ORDERS: Use get_orders to check Amazon delivery status. Use refresh_orders only when explicitly asked.\n\n"
             f"FREE CAPABILITIES (no tools needed — answer directly):\n"
             f"- Unit conversions, cooking measurements\n"
             f"- Recipe suggestions from ingredients\n"
@@ -200,6 +202,15 @@ class Agent:
             todo: TodoService = self.registry.get("todo")
             completed = await todo.complete_item(args["item_id"])
             return {"completed": completed}
+
+        # --- Orders ---
+        elif name == "get_orders":
+            orders: AmazonOrdersService = self.registry.get("orders")
+            return await orders.get_undelivered()
+
+        elif name == "refresh_orders":
+            orders: AmazonOrdersService = self.registry.get("orders")
+            return await orders.force_refresh()
 
         else:
             return {"error": f"Unknown tool: {name}"}

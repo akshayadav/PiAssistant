@@ -14,6 +14,7 @@ from .services.grocery import GroceryService
 from .services.timers import TimerService
 from .services.reminders import ReminderService
 from .services.todo import TodoService
+from .services.orders import AmazonOrdersService
 from .brain.agent import Agent
 from .api.app import create_app
 
@@ -31,6 +32,7 @@ def run_server():
     timers = TimerService()
     reminders = ReminderService(storage)
     todo = TodoService(storage)
+    orders = AmazonOrdersService(storage, settings)
 
     # Register
     registry = ServiceRegistry()
@@ -43,6 +45,7 @@ def run_server():
     registry.register(timers)
     registry.register(reminders)
     registry.register(todo)
+    registry.register(orders)
 
     # Brain
     agent = Agent(llm, registry, settings)

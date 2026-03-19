@@ -419,6 +419,69 @@ function setNewsTTSButton(speaking) {
   btn.title = speaking ? "Stop reading" : "Read headlines aloud";
 }
 
+// === Orders Widget ===
+
+async function fetchOrders() {
+  const el = document.getElementById("orders-content");
+  const countEl = document.getElementById("orders-count");
+  try {
+    const res = await fetch("/api/orders");
+    if (!res.ok) throw new Error();
+    const orders = await res.json();
+    countEl.textContent = orders.length;
+
+    if (orders.length === 0) {
+      el.innerHTML = '<div class="empty-state">No pending orders</div>';
+      return;
+    }
+
+    el.innerHTML = '<div class="orders-list">' + orders.map(o => {
+      const itemsHtml = o.items.map(item => `
+        <div class="order-item">
+          ${item.image_link ? `<img class="order-item-img" src="${item.image_link}" alt="">` : ""}
+          <span class="order-item-title">${item.title || "Item"}</span>
+        </div>
+      `).join("");
+
+      const statusClass = o.delivery_status.toLowerCase().includes("shipped") ? "status-shipped"
+        : o.delivery_status.toLowerCase().includes("out for") ? "status-out"
+        : "status-pending";
+
+      return `
+        <div class="order-card">
+          <div class="order-header">
+            <span class="order-status ${statusClass}">${o.delivery_status || "Processing"}</span>
+            ${o.grand_total != null ? `<span class="order-total">$${o.grand_total.toFixed(2)}</span>` : ""}
+          </div>
+          ${itemsHtml}
+          <div class="order-meta">
+            <span>Ordered ${o.order_date}</span>
+            ${o.tracking_link ? `<a href="${o.tracking_link}" target="_blank" rel="noopener">Track</a>` : ""}
+          </div>
+        </div>`;
+    }).join("") + '</div>';
+  } catch {
+    el.innerHTML = '<div class="empty-state">Orders unavailable</div>';
+  }
+}
+
+async function refreshOrders() {
+  const el = document.getElementById("orders-content");
+  el.innerHTML = '<div class="empty-state">Refreshing from Amazon...</div>';
+  try {
+    const res = await fetch("/api/orders/refresh", { method: "POST" });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    if (data.error) {
+      el.innerHTML = `<div class="empty-state">${data.error}</div>`;
+      return;
+    }
+  } catch {
+    // Fall through to fetch cached data
+  }
+  fetchOrders();
+}
+
 // === Grocery Widget ===
 
 async function fetchGrocery() {
@@ -567,6 +630,7 @@ function refreshAll() {
   fetchSessions();
   fetchTimers();
   fetchNews();
+  fetchOrders();
   fetchGrocery();
   fetchReminders();
   fetchNotes();
@@ -584,6 +648,7 @@ setInterval(fetchWeather, 300000);    // 5 min
 setInterval(fetchNews, 1800000);      // 30 min
 setInterval(fetchSessions, 2000);     // 2 sec
 setInterval(fetchTimers, 1000);       // 1 sec
+setInterval(fetchOrders, 300000);     // 5 min
 setInterval(fetchGrocery, 30000);     // 30 sec
 setInterval(fetchReminders, 30000);   // 30 sec
 setInterval(fetchNotes, 30000);       // 30 sec

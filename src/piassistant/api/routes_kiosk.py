@@ -270,6 +270,22 @@ async def delete_news_feed(request: Request, feed_id: int):
         await db.close()
 
 
+# --- Orders ---
+
+@router.get("/orders")
+async def get_orders(request: Request):
+    """Get undelivered Amazon orders."""
+    orders = request.app.state.registry.get("orders")
+    return await orders.get_undelivered()
+
+
+@router.post("/orders/refresh")
+async def refresh_orders(request: Request):
+    """Force refresh Amazon order data."""
+    orders = request.app.state.registry.get("orders")
+    return await orders.force_refresh()
+
+
 # --- Grocery ---
 
 class GroceryAddRequest(BaseModel):
