@@ -108,12 +108,12 @@ PiAssistant/
 │       │   └── calendar.py   # Calendar events (Google + iCloud CalDAV)
 │       ├── brain/
 │       │   ├── agent.py      # Tool-use loop: user msg → Claude → tools → response
-│       │   └── tools.py      # Tool definitions for Claude (28 tools)
+│       │   └── tools.py      # Tool definitions for Claude (30 tools)
 │       ├── api/
 │       │   ├── app.py        # FastAPI app factory
 │       │   ├── routes_assistant.py  # /api/chat — human interaction
 │       │   ├── routes_pico.py       # /api/pico/* — compact JSON for Pico Ws
-│       │   ├── routes_health.py     # /api/health — diagnostics
+│       │   ├── routes_health.py     # /api/health, /api/config — diagnostics + frontend config
 │       │   ├── routes_kiosk.py      # /api/grocery, /api/timers, etc. — widget data
 │       │   └── routes_hooks.py      # /api/hooks/* — Claude Code session monitor
 │       ├── static/
@@ -186,6 +186,8 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Calendar widget — Google Calendar OAuth2 + iCloud CalDAV, merged timeline view, color-coded sources
 - [x] 30 Claude tools (weather 2, news 2, calendar 2, network 2, sysmon 1, quote 1, orders 2, grocery 4, timers 3, reminders 2, notes 2, todos 3, system prompt updated)
 - [x] 60 tests passing
+- [x] Configurable display name — `assistant_name` setting (default "Bunty"), served via `/api/config`, dashboard fetches on load; change in `.env` without touching code
+- [x] LinkedIn post draft — `docs/linkedin-sessions-post.md` (Claude Code session monitor)
 
 ### Up Next (in priority order)
 1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
