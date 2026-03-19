@@ -6,6 +6,13 @@ from fastapi import APIRouter, Request
 router = APIRouter()
 
 
+@router.get("/config")
+async def get_config(request: Request):
+    """Return public config for the frontend."""
+    settings = request.app.state.settings
+    return {"assistant_name": settings.assistant_name}
+
+
 @router.get("/health")
 async def health(request: Request):
     """Service health check for diagnostics."""

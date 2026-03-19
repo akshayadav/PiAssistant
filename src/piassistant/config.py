@@ -45,6 +45,6 @@ class Settings(BaseSettings):
     calendar_cache_ttl: int = 900  # 15 minutes
 
     # Assistant
-    assistant_name: str = "PiAssistant"
+    assistant_name: str = "Bunty"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}

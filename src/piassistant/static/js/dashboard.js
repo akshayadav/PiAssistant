@@ -8,6 +8,14 @@ const timerAlert = document.getElementById("timer-alert");
 const timerAlertText = document.getElementById("timer-alert-text");
 
 let sending = false;
+let assistantName = "Assistant";
+
+// Fetch display name from config
+fetch("/api/config").then(r => r.json()).then(c => {
+  assistantName = c.assistant_name || "Assistant";
+  document.getElementById("app-title").textContent = assistantName;
+  document.title = assistantName;
+}).catch(() => {});
 
 // === Chat ===
 
@@ -28,7 +36,7 @@ function addMessage(text, role) {
   div.className = `msg ${role}`;
   const sender = document.createElement("div");
   sender.className = "sender";
-  sender.textContent = role === "user" ? "You" : "PiAssistant";
+  sender.textContent = role === "user" ? "You" : assistantName;
   div.appendChild(sender);
   const body = document.createElement("div");
   body.textContent = text;
@@ -45,7 +53,7 @@ function addThinking() {
   div.id = "thinking";
   const sender = document.createElement("div");
   sender.className = "sender";
-  sender.textContent = "PiAssistant";
+  sender.textContent = assistantName;
   div.appendChild(sender);
   const body = document.createElement("span");
   body.textContent = "Thinking";
