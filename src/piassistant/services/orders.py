@@ -21,7 +21,7 @@ class AmazonOrdersService(BaseService):
         self.storage = storage
         self.settings = settings
         self._last_refresh: float = 0
-        self._refresh_lock = asyncio.Lock()
+        self._refresh_lock: asyncio.Lock | None = None
         self._bg_task: asyncio.Task | None = None
 
     async def initialize(self) -> None:
@@ -46,6 +46,8 @@ class AmazonOrdersService(BaseService):
             await db.commit()
         finally:
             await db.close()
+
+        self._refresh_lock = asyncio.Lock()
 
         if self.settings.amazon_email and self.settings.amazon_password:
             self._bg_task = asyncio.create_task(self._background_refresh_loop())
