@@ -87,7 +87,7 @@ class AmazonOrdersService(BaseService):
             session = AmazonSession(
                 self.settings.amazon_email,
                 self.settings.amazon_password,
-                otp_secret=self.settings.amazon_otp_secret or None,
+                otp_secret_key=self.settings.amazon_otp_secret or None,
             )
             session.login()
 
