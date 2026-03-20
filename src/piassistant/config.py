@@ -47,4 +47,8 @@ class Settings(BaseSettings):
     # Assistant
     assistant_name: str = "Bunty"
 
+    # API key for protecting write endpoints (POST/PUT/DELETE/PATCH)
+    # Leave empty to allow all requests (local-only mode)
+    api_key: str = ""
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}

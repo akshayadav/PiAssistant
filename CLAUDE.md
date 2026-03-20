@@ -111,6 +111,7 @@ PiAssistant/
 │       │   └── tools.py      # Tool definitions for Claude (30 tools)
 │       ├── api/
 │       │   ├── app.py        # FastAPI app factory
+│       │   ├── middleware.py        # API key auth middleware (Bearer token on write endpoints)
 │       │   ├── routes_assistant.py  # /api/chat — human interaction
 │       │   ├── routes_pico.py       # /api/pico/* — compact JSON for Pico Ws
 │       │   ├── routes_health.py     # /api/health, /api/config — diagnostics + frontend config
@@ -188,6 +189,7 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] 60 tests passing
 - [x] Configurable display name — `assistant_name` setting (default "Bunty"), served via `/api/config`, dashboard fetches on load; change in `.env` without touching code
 - [x] LinkedIn post draft — `docs/linkedin-sessions-post.md` (Claude Code session monitor)
+- [x] Remote access — Tailscale + API key auth middleware, CLI auth, dashboard settings gear, hooks env vars, 67 tests passing
 
 ### Up Next (in priority order)
 1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
@@ -263,6 +265,26 @@ journalctl -u piassistant -f
 ```
 
 **Tailscale** provides secure remote access from anywhere: `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`
+
+### Remote Access (Tailscale + API Key)
+
+Tailscale provides encrypted mesh VPN (WireGuard). An API key guard protects write endpoints so devices on the Tailscale mesh can't modify data without the key.
+
+**Setup**:
+1. Set `API_KEY=<your-secret>` in `.env` on the Pi, restart service
+2. GET endpoints (weather, calendar, health) work without auth
+3. POST/PUT/DELETE/PATCH endpoints require `Authorization: Bearer <key>` header
+
+**CLI remote access**:
+```bash
+export PIASSISTANT_URL=http://100.x.x.x:8000    # Tailscale IP
+export PIASSISTANT_API_KEY=your-secret
+python -m piassistant cli
+```
+
+**Claude Code hooks**: Set `PIASSISTANT_URL` and `PIASSISTANT_API_KEY` env vars — hooks in `deploy/claude-hooks.json` use them automatically (falls back to mDNS if unset).
+
+**Dashboard**: Click gear icon in header → enter API key → saved to `localStorage`.
 
 ## MCP Servers
 

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Assistant</title>
-<link rel="stylesheet" href="/static/css/dashboard.css?v=11">
+<link rel="stylesheet" href="/static/css/dashboard.css?v=12">
 </head>
 <body>
 
@@ -15,9 +15,19 @@
   </div>
   <div class="header-actions">
     <button onclick="resetChat()">New Chat</button>
+    <button onclick="toggleSettings()" title="API key settings">&#9881;</button>
     <button onclick="shutdownPi()" style="color:var(--accent)">Shutdown</button>
   </div>
 </header>
+
+<div id="settings-panel" style="display:none;padding:8px 16px;background:var(--widget-bg);border-bottom:1px solid #ffffff10">
+  <form onsubmit="saveApiKey(event)" style="display:flex;gap:8px;align-items:center">
+    <label style="font-size:0.8rem;color:var(--text-dim)">API Key:</label>
+    <input type="password" id="api-key-input" placeholder="Enter API key for remote access" style="flex:1;max-width:300px;padding:4px 8px;background:var(--bg);border:1px solid #ffffff20;border-radius:6px;color:var(--text);font-size:0.8rem">
+    <button type="submit" style="padding:4px 10px;background:var(--accent);border:none;border-radius:6px;color:white;font-size:0.8rem;cursor:pointer">Save</button>
+    <button type="button" onclick="clearApiKey()" style="padding:4px 10px;background:transparent;border:1px solid #ffffff20;border-radius:6px;color:var(--text-dim);font-size:0.8rem;cursor:pointer">Clear</button>
+  </form>
+</div>
 
 <div id="main-scroll">
 <div id="widgets">
@@ -156,7 +166,7 @@
   <button onclick="dismissTimerAlert()">Dismiss</button>
 </div>
 
-<script src="/static/js/dashboard.js?v=11"></script>
+<script src="/static/js/dashboard.js?v=12"></script>
 
 </body>
 </html>

@@ -15,9 +15,14 @@ async def repl(base_url: str | None = None):
     3. http://localhost:8000 (default)
     """
     url = base_url or os.environ.get("PIASSISTANT_URL", "http://localhost:8000")
-    client = httpx.AsyncClient(base_url=url, timeout=30)
+    api_key = os.environ.get("PIASSISTANT_API_KEY", "")
+    headers = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    client = httpx.AsyncClient(base_url=url, timeout=30, headers=headers)
 
-    print(f"PiAssistant CLI (server: {url})")
+    auth_label = " (authenticated)" if api_key else ""
+    print(f"PiAssistant CLI (server: {url}){auth_label}")
     print("Commands: 'quit', 'health', 'reset'")
     print("-" * 40)
 

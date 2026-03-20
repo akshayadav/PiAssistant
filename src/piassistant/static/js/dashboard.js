@@ -10,6 +10,51 @@ const timerAlertText = document.getElementById("timer-alert-text");
 let sending = false;
 let assistantName = "Assistant";
 
+// === API Key / Auth ===
+
+function getApiKey() {
+  return localStorage.getItem("piassistant_api_key") || "";
+}
+
+function authHeaders() {
+  const key = getApiKey();
+  const h = { "Content-Type": "application/json" };
+  if (key) h["Authorization"] = `Bearer ${key}`;
+  return h;
+}
+
+function authHeadersNoBody() {
+  const key = getApiKey();
+  if (key) return { "Authorization": `Bearer ${key}` };
+  return {};
+}
+
+function toggleSettings() {
+  const panel = document.getElementById("settings-panel");
+  panel.style.display = panel.style.display === "none" ? "block" : "none";
+  if (panel.style.display === "block") {
+    document.getElementById("api-key-input").value = getApiKey();
+    document.getElementById("api-key-input").focus();
+  }
+}
+
+function saveApiKey(e) {
+  e.preventDefault();
+  const key = document.getElementById("api-key-input").value.trim();
+  if (key) {
+    localStorage.setItem("piassistant_api_key", key);
+  } else {
+    localStorage.removeItem("piassistant_api_key");
+  }
+  document.getElementById("settings-panel").style.display = "none";
+}
+
+function clearApiKey() {
+  localStorage.removeItem("piassistant_api_key");
+  document.getElementById("api-key-input").value = "";
+  document.getElementById("settings-panel").style.display = "none";
+}
+
 // Fetch display name from config
 fetch("/api/config").then(r => r.json()).then(c => {
   assistantName = c.assistant_name || "Assistant";
@@ -83,7 +128,7 @@ async function sendMessage() {
   try {
     const res = await fetch("/api/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
       body: JSON.stringify({ message: text }),
     });
     removeThinking();
@@ -104,7 +149,7 @@ async function sendMessage() {
 
 async function resetChat() {
   try {
-    await fetch("/api/reset", { method: "POST" });
+    await fetch("/api/reset", { method: "POST", headers: authHeadersNoBody() });
     messagesEl.innerHTML = "";
     addMessage("Chat reset. How can I help you?", "bot");
   } catch (err) {
@@ -115,7 +160,7 @@ async function resetChat() {
 async function shutdownPi() {
   if (!confirm("Shut down the Raspberry Pi?")) return;
   try {
-    await fetch("/api/shutdown", { method: "POST" });
+    await fetch("/api/shutdown", { method: "POST", headers: authHeadersNoBody() });
     addMessage("Shutting down... Safe to unplug in 10 seconds.", "bot");
     statusEl.textContent = "shutting down";
     statusEl.className = "status";
@@ -252,7 +297,7 @@ async function addWeatherCity(e) {
   if (!name) return;
   await fetch("/api/weather/cities", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
     body: JSON.stringify({ name: name }),
   });
   input.value = "";
@@ -261,7 +306,7 @@ async function addWeatherCity(e) {
 }
 
 async function removeWeatherCity(id) {
-  await fetch(`/api/weather/cities/${id}`, { method: "DELETE" });
+  await fetch(`/api/weather/cities/${id}`, { method: "DELETE", headers: authHeadersNoBody() });
   fetchWeather();
 }
 
@@ -401,7 +446,7 @@ async function addNetworkDevice(e) {
   if (!name || !hostname) return;
   await fetch("/api/network/devices", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
     body: JSON.stringify({ name, hostname }),
   });
   document.getElementById("network-device-name").value = "";
@@ -411,7 +456,7 @@ async function addNetworkDevice(e) {
 }
 
 async function removeNetworkDevice(id) {
-  await fetch(`/api/network/devices/${id}`, { method: "DELETE" });
+  await fetch(`/api/network/devices/${id}`, { method: "DELETE", headers: authHeadersNoBody() });
   fetchNetwork();
 }
 
@@ -541,7 +586,7 @@ async function addNewsFeed(e) {
 
   await fetch("/api/news/feeds", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
     body: JSON.stringify({ name, type, provider, country: type === "headlines" ? country : "", query: type === "search" ? query : "" }),
   });
   document.getElementById("news-feed-name").value = "";
@@ -551,7 +596,7 @@ async function addNewsFeed(e) {
 }
 
 async function removeNewsFeed(id) {
-  await fetch(`/api/news/feeds/${id}`, { method: "DELETE" });
+  await fetch(`/api/news/feeds/${id}`, { method: "DELETE", headers: authHeadersNoBody() });
   fetchNews();
 }
 
@@ -634,7 +679,7 @@ async function refreshOrders() {
   const el = document.getElementById("orders-content");
   el.innerHTML = '<div class="empty-state">Refreshing from Amazon...</div>';
   try {
-    const res = await fetch("/api/orders/refresh", { method: "POST" });
+    const res = await fetch("/api/orders/refresh", { method: "POST", headers: authHeadersNoBody() });
     if (!res.ok) throw new Error();
     const data = await res.json();
     if (data.error) {
@@ -707,7 +752,7 @@ async function fetchGrocery() {
 
 async function toggleGrocery(id, done) {
   if (done) {
-    await fetch(`/api/grocery/${id}/done`, { method: "POST" });
+    await fetch(`/api/grocery/${id}/done`, { method: "POST", headers: authHeadersNoBody() });
   }
   // Refresh after short delay
   setTimeout(fetchGrocery, 300);
@@ -743,7 +788,7 @@ async function fetchReminders() {
 }
 
 async function completeReminder(id) {
-  await fetch(`/api/reminders/${id}/done`, { method: "POST" });
+  await fetch(`/api/reminders/${id}/done`, { method: "POST", headers: authHeadersNoBody() });
   setTimeout(fetchReminders, 300);
 }
 
@@ -801,7 +846,7 @@ async function fetchTodos() {
 }
 
 async function completeTodo(id) {
-  await fetch(`/api/todos/${id}/done`, { method: "POST" });
+  await fetch(`/api/todos/${id}/done`, { method: "POST", headers: authHeadersNoBody() });
   setTimeout(fetchTodos, 300);
 }
 

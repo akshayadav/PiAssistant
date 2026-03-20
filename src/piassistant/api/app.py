@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from ..brain.agent import Agent
 from ..config import Settings
 from ..services.base import ServiceRegistry
+from .middleware import APIKeyMiddleware
 
 STATIC_DIR = Path(__file__).parent.parent / "static"
 
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
 
 def create_app(registry: ServiceRegistry, agent: Agent, settings: Settings) -> FastAPI:
     app = FastAPI(title=settings.assistant_name, version="0.1.0", lifespan=lifespan)
+    app.add_middleware(APIKeyMiddleware, api_key=settings.api_key)
     app.state.registry = registry
     app.state.agent = agent
     app.state.settings = settings
