@@ -29,31 +29,6 @@ function authHeadersNoBody() {
   return {};
 }
 
-function toggleSettings() {
-  const panel = document.getElementById("settings-panel");
-  panel.style.display = panel.style.display === "none" ? "block" : "none";
-  if (panel.style.display === "block") {
-    document.getElementById("api-key-input").value = getApiKey();
-    document.getElementById("api-key-input").focus();
-  }
-}
-
-function saveApiKey(e) {
-  e.preventDefault();
-  const key = document.getElementById("api-key-input").value.trim();
-  if (key) {
-    localStorage.setItem("piassistant_api_key", key);
-  } else {
-    localStorage.removeItem("piassistant_api_key");
-  }
-  document.getElementById("settings-panel").style.display = "none";
-}
-
-function clearApiKey() {
-  localStorage.removeItem("piassistant_api_key");
-  document.getElementById("api-key-input").value = "";
-  document.getElementById("settings-panel").style.display = "none";
-}
 
 // Fetch display name from config
 fetch("/api/config").then(r => r.json()).then(c => {
