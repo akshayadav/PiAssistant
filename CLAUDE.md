@@ -189,7 +189,7 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] 60 tests passing
 - [x] Configurable display name — `assistant_name` setting (default "Bunty"), served via `/api/config`, dashboard fetches on load; change in `.env` without touching code
 - [x] LinkedIn post draft — `docs/linkedin-sessions-post.md` (Claude Code session monitor)
-- [x] Remote access — Tailscale + API key auth middleware, CLI auth, dashboard settings gear, hooks env vars, 67 tests passing
+- [x] Remote access — Cloudflare Tunnel (`bunty.akshayadav.com`), API key auth middleware (dormant), CLI auth, hooks env vars, 67 tests passing
 
 ### Up Next (in priority order)
 1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
@@ -266,25 +266,28 @@ journalctl -u piassistant -f
 
 **Tailscale** provides secure remote access from anywhere: `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`
 
-### Remote Access (Tailscale + API Key)
+### Remote Access (Cloudflare Tunnel)
 
-Tailscale provides encrypted mesh VPN (WireGuard). An API key guard protects write endpoints so devices on the Tailscale mesh can't modify data without the key.
+PiAssistant is publicly accessible at **https://bunty.akshayadav.com** via Cloudflare Tunnel.
 
-**Setup**:
-1. Set `API_KEY=<your-secret>` in `.env` on the Pi, restart service
-2. GET endpoints (weather, calendar, health) work without auth
-3. POST/PUT/DELETE/PATCH endpoints require `Authorization: Bearer <key>` header
+| Component | Detail |
+|---|---|
+| Domain | `akshayadav.com` (Namecheap, DNS via Cloudflare free plan) |
+| Tunnel | `cloudflared` on Pi, systemd service, auto-starts on boot |
+| HTTPS | Automatic via Cloudflare |
+| Auth | Optional API key middleware (`api/middleware.py`), currently disabled |
 
-**CLI remote access**:
+**How it works**: `cloudflared` on the Pi creates an outbound connection to Cloudflare's edge. No ports opened on the router. Cloudflare routes `bunty.akshayadav.com` through the tunnel to `localhost:8000`.
+
+**Manage tunnel**:
 ```bash
-export PIASSISTANT_URL=http://100.x.x.x:8000    # Tailscale IP
-export PIASSISTANT_API_KEY=your-secret
-python -m piassistant cli
+sudo systemctl status cloudflared    # check tunnel
+sudo systemctl restart cloudflared   # restart tunnel
 ```
 
-**Claude Code hooks**: Set `PIASSISTANT_URL` and `PIASSISTANT_API_KEY` env vars — hooks in `deploy/claude-hooks.json` use them automatically (falls back to mDNS if unset).
+**Optional API key auth**: Set `API_KEY=<secret>` in `.env` to protect POST/PUT/DELETE/PATCH endpoints. GET endpoints always pass through. CLI supports `PIASSISTANT_API_KEY` env var. Currently not enabled.
 
-**Dashboard**: Click gear icon in header → enter API key → saved to `localStorage`.
+**Claude Code hooks**: Set `PIASSISTANT_URL=https://bunty.akshayadav.com` env var — hooks in `deploy/claude-hooks.json` use it automatically (falls back to mDNS if unset).
 
 ## MCP Servers
 
