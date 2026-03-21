@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Assistant</title>
-<link rel="stylesheet" href="/static/css/dashboard.css?v=13">
+<link rel="stylesheet" href="/static/css/dashboard.css?v=14">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-web-links@0.11.0/lib/addon-web-links.min.js"></script>
 </head>
 <body>
 
@@ -140,6 +144,18 @@
   </div>
 </div>
 
+<div id="terminal-section" style="display:none">
+  <div id="terminal-header">
+    <h2>Terminal <span class="badge badge-idle" id="terminal-status-badge">disconnected</span></h2>
+    <div class="terminal-actions">
+      <button id="terminal-claude-btn" onclick="sendClaudeCommand()" style="display:none">Start Claude</button>
+      <button id="terminal-connect-btn" onclick="toggleTerminal()">Connect</button>
+      <button onclick="toggleTerminalFullscreen()">&#x26F6;</button>
+    </div>
+  </div>
+  <div id="terminal-container"></div>
+</div>
+
 <div id="chat-area">
   <div id="messages"></div>
 </div>
@@ -156,7 +172,7 @@
   <button onclick="dismissTimerAlert()">Dismiss</button>
 </div>
 
-<script src="/static/js/dashboard.js?v=13"></script>
+<script src="/static/js/dashboard.js?v=14"></script>
 
 </body>
 </html>

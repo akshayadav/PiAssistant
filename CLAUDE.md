@@ -116,7 +116,8 @@ PiAssistant/
 │       │   ├── routes_pico.py       # /api/pico/* — compact JSON for Pico Ws
 │       │   ├── routes_health.py     # /api/health, /api/config — diagnostics + frontend config
 │       │   ├── routes_kiosk.py      # /api/grocery, /api/timers, etc. — widget data
-│       │   └── routes_hooks.py      # /api/hooks/* — Claude Code session monitor
+│       │   ├── routes_hooks.py      # /api/hooks/* — Claude Code session monitor
+│       │   └── routes_terminal.py   # /api/terminal/* — WebSocket SSH bridge to Mac Mini
 │       ├── static/
 │       │   ├── index.html           # Web dashboard with widget grid
 │       │   ├── css/dashboard.css    # Dashboard styles
@@ -190,6 +191,7 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Configurable display name — `assistant_name` setting (default "Bunty"), served via `/api/config`, dashboard fetches on load; change in `.env` without touching code
 - [x] LinkedIn post draft — `docs/linkedin-sessions-post.md` (Claude Code session monitor)
 - [x] Remote access — Cloudflare Tunnel (`bunty.akshayadav.com`), API key auth middleware (dormant), CLI auth, hooks env vars, 67 tests passing
+- [x] Web Terminal — xterm.js + WebSocket SSH bridge to Mac Mini, run Claude Code from dashboard, fullscreen toggle, "Start Claude" button, 67 tests passing
 
 ### Up Next (in priority order)
 1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
@@ -288,6 +290,28 @@ sudo systemctl restart cloudflared   # restart tunnel
 **Optional API key auth**: Set `API_KEY=<secret>` in `.env` to protect POST/PUT/DELETE/PATCH endpoints. GET endpoints always pass through. CLI supports `PIASSISTANT_API_KEY` env var. Currently not enabled.
 
 **Claude Code hooks**: Set `PIASSISTANT_URL=https://bunty.akshayadav.com` env var — hooks in `deploy/claude-hooks.json` use it automatically (falls back to mDNS if unset).
+
+### Web Terminal (SSH Bridge)
+
+The dashboard includes an xterm.js terminal that bridges to the Mac Mini via SSH. This lets you run Claude Code (or any command) from the browser.
+
+**Architecture**: `Browser (xterm.js) ←WebSocket→ Pi (FastAPI /api/terminal/ws) ←SSH (asyncssh)→ Mac Mini shell`
+
+**SSH key setup** (on Pi):
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_macmini -N ""
+ssh-copy-id -i ~/.ssh/id_ed25519_macmini.pub akshay@<mac-mini-host>
+ssh -i ~/.ssh/id_ed25519_macmini akshay@<mac-mini-host> echo ok
+```
+
+**Then in `.env`**:
+```
+TERMINAL_SSH_HOST=<mac-mini-host>
+TERMINAL_SSH_USER=akshay
+TERMINAL_SSH_KEY=/home/akshay/.ssh/id_ed25519_macmini
+```
+
+Terminal section is hidden when not configured. WebSocket auth uses `?token=` query param when `API_KEY` is set.
 
 ## MCP Servers
 

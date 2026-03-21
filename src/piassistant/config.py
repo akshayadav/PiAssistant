@@ -47,6 +47,12 @@ class Settings(BaseSettings):
     # Assistant
     assistant_name: str = "Bunty"
 
+    # Terminal (SSH bridge to Mac Mini — optional)
+    terminal_ssh_host: str = ""
+    terminal_ssh_user: str = ""
+    terminal_ssh_key: str = ""
+    terminal_ssh_port: int = 22
+
     # API key for protecting write endpoints (POST/PUT/DELETE/PATCH)
     # Leave empty to allow all requests (local-only mode)
     api_key: str = ""

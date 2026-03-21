@@ -24,6 +24,7 @@ dependencies = [
     "google-auth-oauthlib>=1.0",
     "google-auth-httplib2>=0.1",
     "caldav>=1.0",
+    "asyncssh>=2.14",
 ]
 
 [project.optional-dependencies]

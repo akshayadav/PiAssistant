@@ -825,6 +825,164 @@ async function completeTodo(id) {
   setTimeout(fetchTodos, 300);
 }
 
+// === Terminal Widget ===
+
+let term = null;
+let termWs = null;
+let termFitAddon = null;
+let termConnected = false;
+
+async function checkTerminalAvailable() {
+  try {
+    const res = await fetch("/api/terminal/status");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.configured) {
+      document.getElementById("terminal-section").style.display = "";
+    }
+  } catch {}
+}
+
+function initXterm() {
+  if (term) return;
+  term = new Terminal({
+    cursorBlink: true,
+    fontSize: 13,
+    fontFamily: "'Menlo', 'DejaVu Sans Mono', 'Consolas', monospace",
+    theme: {
+      background: "#1a1a2e",
+      foreground: "#eeeeee",
+      cursor: "#e94560",
+      selectionBackground: "#0f346080",
+      black: "#1a1a2e",
+      red: "#e94560",
+      green: "#4ade80",
+      yellow: "#facc15",
+      blue: "#60a5fa",
+      magenta: "#c084fc",
+      cyan: "#22d3ee",
+      white: "#eeeeee",
+      brightBlack: "#999999",
+      brightRed: "#ef4444",
+      brightGreen: "#4ade80",
+      brightYellow: "#facc15",
+      brightBlue: "#60a5fa",
+      brightMagenta: "#c084fc",
+      brightCyan: "#22d3ee",
+      brightWhite: "#ffffff",
+    },
+  });
+  termFitAddon = new FitAddon.FitAddon();
+  term.loadAddon(termFitAddon);
+  term.loadAddon(new WebLinksAddon.WebLinksAddon());
+  term.open(document.getElementById("terminal-container"));
+  termFitAddon.fit();
+
+  // Send resize events to server
+  term.onResize(({ cols, rows }) => {
+    if (termWs && termWs.readyState === WebSocket.OPEN) {
+      termWs.send(JSON.stringify({ type: "resize", cols, rows }));
+    }
+  });
+
+  // Refit on window resize
+  window.addEventListener("resize", () => {
+    if (termFitAddon) termFitAddon.fit();
+  });
+}
+
+function connectTerminal() {
+  initXterm();
+  term.clear();
+
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  let url = `${proto}//${location.host}/api/terminal/ws`;
+  const apiKey = getApiKey();
+  if (apiKey) url += `?token=${encodeURIComponent(apiKey)}`;
+
+  termWs = new WebSocket(url);
+
+  termWs.onopen = () => {
+    termConnected = true;
+    updateTerminalUI();
+    termFitAddon.fit();
+    // Send initial size
+    const dims = termFitAddon.proposeDimensions();
+    if (dims) {
+      termWs.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
+    }
+  };
+
+  termWs.onmessage = (e) => {
+    term.write(e.data);
+  };
+
+  termWs.onclose = () => {
+    termConnected = false;
+    updateTerminalUI();
+    term.write("\r\n\x1b[90m--- Disconnected ---\x1b[0m\r\n");
+  };
+
+  termWs.onerror = () => {
+    termConnected = false;
+    updateTerminalUI();
+  };
+
+  // Forward keystrokes to WebSocket
+  term.onData((data) => {
+    if (termWs && termWs.readyState === WebSocket.OPEN) {
+      termWs.send(data);
+    }
+  });
+}
+
+function disconnectTerminal() {
+  if (termWs) {
+    termWs.close();
+    termWs = null;
+  }
+  termConnected = false;
+  updateTerminalUI();
+}
+
+function toggleTerminal() {
+  if (termConnected) {
+    disconnectTerminal();
+  } else {
+    connectTerminal();
+  }
+}
+
+function sendClaudeCommand() {
+  if (termWs && termWs.readyState === WebSocket.OPEN) {
+    termWs.send("claude\n");
+  }
+}
+
+function toggleTerminalFullscreen() {
+  const section = document.getElementById("terminal-section");
+  section.classList.toggle("fullscreen");
+  if (termFitAddon) setTimeout(() => termFitAddon.fit(), 100);
+}
+
+function updateTerminalUI() {
+  const badge = document.getElementById("terminal-status-badge");
+  const connectBtn = document.getElementById("terminal-connect-btn");
+  const claudeBtn = document.getElementById("terminal-claude-btn");
+
+  if (termConnected) {
+    badge.textContent = "connected";
+    badge.className = "badge badge-waiting";
+    connectBtn.textContent = "Disconnect";
+    claudeBtn.style.display = "";
+  } else {
+    badge.textContent = "disconnected";
+    badge.className = "badge badge-idle";
+    connectBtn.textContent = "Connect";
+    claudeBtn.style.display = "none";
+  }
+}
+
 // === Refresh all widgets ===
 
 function refreshAll() {
@@ -847,6 +1005,7 @@ function refreshAll() {
 
 checkHealth();
 refreshAll();
+checkTerminalAvailable();
 
 // Polling intervals
 setInterval(checkHealth, 30000);
