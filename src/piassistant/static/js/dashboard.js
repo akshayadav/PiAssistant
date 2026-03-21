@@ -892,13 +892,18 @@ function initXterm() {
 }
 
 function connectTerminal() {
+  const password = document.getElementById("terminal-password").value;
+  if (!password) {
+    alert("Enter terminal password to connect.");
+    document.getElementById("terminal-password").focus();
+    return;
+  }
+
   initXterm();
   term.clear();
 
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
-  let url = `${proto}//${location.host}/api/terminal/ws`;
-  const apiKey = getApiKey();
-  if (apiKey) url += `?token=${encodeURIComponent(apiKey)}`;
+  let url = `${proto}//${location.host}/api/terminal/ws?token=${encodeURIComponent(password)}`;
 
   termWs = new WebSocket(url);
 
@@ -969,17 +974,20 @@ function updateTerminalUI() {
   const badge = document.getElementById("terminal-status-badge");
   const connectBtn = document.getElementById("terminal-connect-btn");
   const claudeBtn = document.getElementById("terminal-claude-btn");
+  const passwordInput = document.getElementById("terminal-password");
 
   if (termConnected) {
     badge.textContent = "connected";
     badge.className = "badge badge-waiting";
     connectBtn.textContent = "Disconnect";
     claudeBtn.style.display = "";
+    passwordInput.style.display = "none";
   } else {
     badge.textContent = "disconnected";
     badge.className = "badge badge-idle";
     connectBtn.textContent = "Connect";
     claudeBtn.style.display = "none";
+    passwordInput.style.display = "";
   }
 }
 

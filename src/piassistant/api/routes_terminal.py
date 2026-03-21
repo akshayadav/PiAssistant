@@ -9,9 +9,13 @@ router = APIRouter()
 
 @router.get("/terminal/status")
 async def terminal_status(request: Request):
-    """Check if terminal SSH bridge is configured."""
+    """Check if terminal SSH bridge is configured and password-protected."""
     settings = request.app.state.settings
-    configured = bool(settings.terminal_ssh_host and settings.terminal_ssh_user)
+    configured = bool(
+        settings.terminal_ssh_host
+        and settings.terminal_ssh_user
+        and settings.terminal_password
+    )
     return {
         "configured": configured,
         "host": settings.terminal_ssh_host if configured else "",
@@ -23,16 +27,16 @@ async def terminal_ws(ws: WebSocket, token: str = Query(default="")):
     settings = ws.app.state.settings
 
     # Check if terminal is configured
-    if not settings.terminal_ssh_host or not settings.terminal_ssh_user:
+    if not settings.terminal_ssh_host or not settings.terminal_ssh_user or not settings.terminal_password:
         await ws.accept()
-        await ws.send_text("\r\nTerminal not configured. Set TERMINAL_SSH_HOST and TERMINAL_SSH_USER in .env\r\n")
+        await ws.send_text("\r\nTerminal not configured.\r\n")
         await ws.close()
         return
 
-    # Optional API key check
-    if settings.api_key and token != settings.api_key:
+    # Password check (required)
+    if token != settings.terminal_password:
         await ws.accept()
-        await ws.send_text("\r\nUnauthorized. Pass ?token=<api_key> to connect.\r\n")
+        await ws.send_text("\r\nIncorrect password.\r\n")
         await ws.close()
         return
 

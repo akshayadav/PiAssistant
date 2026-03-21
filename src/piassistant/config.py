@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     terminal_ssh_user: str = ""
     terminal_ssh_key: str = ""
     terminal_ssh_port: int = 22
+    terminal_password: str = ""  # Required to use terminal; empty = terminal disabled
 
     # API key for protecting write endpoints (POST/PUT/DELETE/PATCH)
     # Leave empty to allow all requests (local-only mode)

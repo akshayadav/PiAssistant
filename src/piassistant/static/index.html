@@ -148,6 +148,7 @@
   <div id="terminal-header">
     <h2>Terminal <span class="badge badge-idle" id="terminal-status-badge">disconnected</span></h2>
     <div class="terminal-actions">
+      <input type="password" id="terminal-password" placeholder="Password" style="width:120px;padding:4px 8px;background:var(--bg);border:1px solid #ffffff20;border-radius:6px;color:var(--text);font-size:0.75rem">
       <button id="terminal-claude-btn" onclick="sendClaudeCommand()" style="display:none">Start Claude</button>
       <button id="terminal-connect-btn" onclick="toggleTerminal()">Connect</button>
       <button onclick="toggleTerminalFullscreen()">&#x26F6;</button>
