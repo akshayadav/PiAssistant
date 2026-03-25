@@ -218,8 +218,8 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
 .grocery-item input[type="checkbox"] { accent-color: var(--accent); }
 .grocery-qty { color: var(--text-muted); font-size: 0.7rem; }
 
-/* Reminders widget */
-.reminder-item, .note-item, .todo-item {
+/* Tasks widget (unified todos + reminders) */
+.task-item {
   padding: 4px 0;
   font-size: 0.8rem;
   border-bottom: 1px solid #ffffff08;
@@ -227,16 +227,60 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   align-items: center;
   gap: 6px;
 }
-.reminder-item:last-child, .note-item:last-child, .todo-item:last-child { border-bottom: none; }
-.reminder-due { color: var(--yellow); font-size: 0.7rem; }
-.reminder-person, .note-person { color: var(--blue); font-size: 0.7rem; }
+.task-item:last-child { border-bottom: none; }
+.task-item input[type="checkbox"] { accent-color: var(--accent); flex-shrink: 0; }
+.task-text { flex: 1; }
+.task-item.done { text-decoration: line-through; color: var(--text-muted); }
+.task-priority-high { border-left: 3px solid var(--red); padding-left: 6px; }
+.task-priority-medium { border-left: 3px solid var(--yellow); padding-left: 6px; }
+.task-priority-low { border-left: 3px solid var(--green); padding-left: 6px; }
+.task-due { font-size: 0.65rem; padding: 1px 5px; border-radius: 4px; background: var(--surface2); color: var(--text-muted); white-space: nowrap; }
+.task-overdue { background: var(--red); color: white; }
+.task-due-today { background: var(--yellow); color: #000; }
+.task-person { color: var(--blue); font-size: 0.7rem; white-space: nowrap; }
+.task-reminder { opacity: 0.85; }
+.task-delete-btn {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-size: 0.9rem; padding: 0 2px; line-height: 1; opacity: 0; transition: opacity 0.2s;
+}
+.task-item:hover .task-delete-btn { opacity: 1; }
+.task-delete-btn:hover { color: var(--accent); }
+
+.task-stale {
+  animation: pulse-amber 2s infinite;
+}
+@keyframes pulse-amber {
+  0%, 100% { border-left-color: var(--yellow); }
+  50% { border-left-color: transparent; }
+}
+/* Ensure stale tasks without priority also get a visible indicator */
+.task-stale:not(.task-priority-high):not(.task-priority-medium):not(.task-priority-low) {
+  border-left: 3px solid var(--yellow);
+  padding-left: 6px;
+}
+
+.nudge-banner {
+  background: #78350f;
+  color: var(--yellow);
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+/* Notes widget */
+.note-item {
+  padding: 4px 0;
+  font-size: 0.8rem;
+  border-bottom: 1px solid #ffffff08;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.note-item:last-child { border-bottom: none; }
+.note-person { color: var(--blue); font-size: 0.7rem; }
 .note-pinned { color: var(--accent); }
-.todo-priority-high { border-left: 2px solid var(--red); padding-left: 6px; }
-.todo-priority-medium { border-left: 2px solid var(--yellow); padding-left: 6px; }
-.todo-priority-low { border-left: 2px solid var(--green); padding-left: 6px; }
-.todo-item.done { text-decoration: line-through; color: var(--text-muted); }
-.todo-item input[type="checkbox"],
-.reminder-item input[type="checkbox"] { accent-color: var(--accent); }
 
 /* Calendar widget */
 .calendar-timeline { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -584,6 +628,23 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   max-height: 100px;
 }
 #msg-input:focus { outline: none; border-color: var(--accent); }
+#mic-btn {
+  padding: 8px 12px;
+  background: var(--surface2);
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  align-self: flex-end;
+  transition: background 0.2s, color 0.2s;
+}
+#mic-btn:hover { color: var(--text); }
+#mic-btn.listening {
+  background: var(--accent);
+  color: white;
+  animation: pulse 1s infinite;
+}
 #send-btn {
   padding: 8px 16px;
   background: var(--accent);

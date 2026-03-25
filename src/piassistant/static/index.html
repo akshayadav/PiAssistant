@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Assistant</title>
-<link rel="stylesheet" href="/static/css/dashboard.css?v=15">
+<link rel="stylesheet" href="/static/css/dashboard.css?v=17">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
@@ -80,10 +80,11 @@
     <div id="timers-content"><div class="empty-state">No active timers</div></div>
   </div>
 
-  <!-- Reminders -->
-  <div class="widget" id="reminders-widget">
-    <h2>Reminders <span class="count" id="reminders-count">0</span></h2>
-    <div id="reminders-content"><div class="empty-state">No reminders</div></div>
+  <!-- Tasks (unified todos + reminders) -->
+  <div class="widget" id="tasks-widget">
+    <h2>Tasks <span class="count" id="tasks-count">0</span></h2>
+    <div id="tasks-nudge-banner" class="nudge-banner" style="display:none"></div>
+    <div id="tasks-content"><div class="empty-state">No tasks</div></div>
   </div>
 
   <!-- News -->
@@ -137,11 +138,6 @@
     <div id="notes-content"><div class="empty-state">No notes</div></div>
   </div>
 
-  <!-- Todos -->
-  <div class="widget" id="todos-widget">
-    <h2>To-Do <span class="count" id="todos-count">0</span></h2>
-    <div id="todos-content"><div class="empty-state">No to-dos</div></div>
-  </div>
 </div>
 
 <div id="terminal-section" style="display:none">
@@ -164,6 +160,7 @@
 
 <div id="input-area">
   <textarea id="msg-input" rows="1" placeholder="Ask me anything..." autofocus></textarea>
+  <button id="mic-btn" onclick="toggleVoiceInput()" title="Voice input">&#127908;</button>
   <button id="send-btn" onclick="sendMessage()">Send</button>
 </div>
 
@@ -173,7 +170,7 @@
   <button onclick="dismissTimerAlert()">Dismiss</button>
 </div>
 
-<script src="/static/js/dashboard.js?v=15"></script>
+<script src="/static/js/dashboard.js?v=17"></script>
 
 </body>
 </html>

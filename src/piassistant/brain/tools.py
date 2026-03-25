@@ -195,25 +195,35 @@ TOOL_DEFINITIONS = [
             "required": ["name"],
         },
     },
-    # --- Reminders ---
+    # --- Tasks (unified todos + reminders) ---
     {
-        "name": "reminder_add",
-        "description": "Add a reminder. Use when user says 'remind me to...'.",
+        "name": "task_add",
+        "description": "Add a task or reminder. Use for 'add to my to-do list', 'remind me to...', action items, things to do.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "text": {
                     "type": "string",
-                    "description": "What to be reminded about",
+                    "description": "The task or reminder text",
+                },
+                "priority": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"],
+                    "description": "Task priority. Suggest one if user doesn't specify.",
                 },
                 "due_at": {
                     "type": "string",
-                    "description": "When the reminder is due, ISO format (e.g. '2026-03-18T10:00'). Leave empty if no specific time.",
+                    "description": "Due date/time in ISO format (e.g. '2026-03-28T10:00'). Convert relative dates (e.g. 'tomorrow 10am'). Suggest one if user doesn't specify.",
                     "default": "",
+                },
+                "is_reminder": {
+                    "type": "boolean",
+                    "description": "Set true for lightweight reminders ('remind me to...'). False for action items/tasks.",
+                    "default": False,
                 },
                 "for_person": {
                     "type": "string",
-                    "description": "Who the reminder is for (e.g. 'Akshay'). Leave empty if for the user.",
+                    "description": "Who this is for (e.g. 'Akshay'). Leave empty if for the user.",
                     "default": "",
                 },
             },
@@ -221,8 +231,77 @@ TOOL_DEFINITIONS = [
         },
     },
     {
-        "name": "reminder_list",
-        "description": "List active reminders.",
+        "name": "task_list",
+        "description": "List all active tasks and reminders, sorted by urgency (overdue first, then by priority).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "include_done": {
+                    "type": "boolean",
+                    "description": "Include completed tasks",
+                    "default": False,
+                },
+            },
+        },
+    },
+    {
+        "name": "task_complete",
+        "description": "Mark a task or reminder as done by its ID.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "integer",
+                    "description": "The task ID to complete",
+                },
+            },
+            "required": ["task_id"],
+        },
+    },
+    {
+        "name": "task_delete",
+        "description": "Remove a task entirely (not just mark done — permanently delete).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "integer",
+                    "description": "The task ID to delete",
+                },
+            },
+            "required": ["task_id"],
+        },
+    },
+    {
+        "name": "task_update",
+        "description": "Update an existing task's priority, due date, or text.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "integer",
+                    "description": "The task ID to update",
+                },
+                "text": {
+                    "type": "string",
+                    "description": "New task text",
+                },
+                "priority": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low", ""],
+                    "description": "New priority (empty string to clear)",
+                },
+                "due_at": {
+                    "type": "string",
+                    "description": "New due date in ISO format (empty string to clear)",
+                },
+            },
+            "required": ["task_id"],
+        },
+    },
+    {
+        "name": "task_suggest",
+        "description": "Get all open tasks for AI scheduling analysis. Use when user asks 'what should I prioritize?', 'schedule my tasks', or 'what's most urgent?'. Analyze the list and suggest priorities/due dates, then use task_update to apply.",
         "input_schema": {
             "type": "object",
             "properties": {},
@@ -346,48 +425,6 @@ TOOL_DEFINITIONS = [
         "input_schema": {
             "type": "object",
             "properties": {},
-        },
-    },
-    # --- To-Do ---
-    {
-        "name": "todo_add",
-        "description": "Add a to-do item. Use when user says 'add to my to-do list'.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "text": {
-                    "type": "string",
-                    "description": "The to-do item",
-                },
-                "priority": {
-                    "type": "string",
-                    "description": "Priority: 'high', 'medium', 'low'",
-                    "default": "",
-                },
-            },
-            "required": ["text"],
-        },
-    },
-    {
-        "name": "todo_list",
-        "description": "List to-do items.",
-        "input_schema": {
-            "type": "object",
-            "properties": {},
-        },
-    },
-    {
-        "name": "todo_complete",
-        "description": "Mark a to-do item as done by its ID.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "item_id": {
-                    "type": "integer",
-                    "description": "The to-do item ID to complete",
-                },
-            },
-            "required": ["item_id"],
         },
     },
 ]

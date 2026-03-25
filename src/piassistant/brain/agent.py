@@ -11,7 +11,7 @@ from ..services.news import NewsService
 from ..services.grocery import GroceryService
 from ..services.timers import TimerService
 from ..services.reminders import ReminderService
-from ..services.todo import TodoService
+from ..services.todo import TaskService
 from ..services.orders import AmazonOrdersService
 from ..services.quote import QuoteService
 from ..services.sysmon import SystemMonitorService
@@ -68,9 +68,11 @@ class Agent:
             f"If the user doesn't specify a store, ask which store, or use 'Other' if they want it generic.\n"
             f"When adding multiple items, call grocery_add once per item.\n\n"
             f"TIMERS: Convert user's time to seconds (e.g. '12 minutes' = 720 seconds).\n"
-            f"REMINDERS: Convert relative times to ISO format (e.g. 'tomorrow 10am' → actual date).\n"
+            f"TASKS: Use task_add for things the user needs to do, action items, and reminders.\n"
+            f"If the user doesn't specify priority or due date, suggest appropriate values based on the task description.\n"
+            f"Use task_suggest to analyze all open tasks and recommend scheduling. Convert relative dates to ISO format.\n"
+            f"Use is_reminder=true for lightweight 'remind me to...' items.\n"
             f"NOTES: Use for 'remember that...', 'note that...', or when user wants to save info.\n"
-            f"TO-DOS: Use for task management, action items, things to do.\n"
             f"ORDERS: Use get_orders to check Amazon delivery status. Use refresh_orders only when explicitly asked.\n"
             f"QUOTE: Use get_daily_quote when the user asks for a quote, inspiration, or motivation.\n"
             f"SYSTEM: Use get_system_status for CPU, memory, disk, temperature, or uptime info.\n"
@@ -81,7 +83,7 @@ class Agent:
             f"- Recipe suggestions from ingredients\n"
             f"- Quick math and calculations\n"
             f"- General knowledge questions\n\n"
-            f"DAILY BRIEF: If asked for a daily brief/summary, chain weather + reminders + grocery tools.\n\n"
+            f"DAILY BRIEF: If asked for a daily brief/summary, chain weather + task_list + grocery tools. Highlight overdue/stale tasks.\n\n"
             f"Keep responses concise and conversational.\n"
             f"Current time: {now}\n"
             f"Default location: {self.settings.default_location}"
@@ -168,18 +170,46 @@ class Agent:
             cancelled = await timers.cancel_timer(args["name"])
             return {"cancelled": cancelled}
 
-        # --- Reminders ---
-        elif name == "reminder_add":
-            reminders: ReminderService = self.registry.get("reminders")
-            return await reminders.add_reminder(
+        # --- Tasks (unified todos + reminders) ---
+        elif name == "task_add":
+            tasks: TaskService = self.registry.get("todo")
+            return await tasks.add_task(
                 text=args["text"],
+                priority=args.get("priority", ""),
                 due_at=args.get("due_at", ""),
+                is_reminder=args.get("is_reminder", False),
                 for_person=args.get("for_person", ""),
             )
 
-        elif name == "reminder_list":
-            reminders: ReminderService = self.registry.get("reminders")
-            return await reminders.list_reminders()
+        elif name == "task_list":
+            tasks: TaskService = self.registry.get("todo")
+            return await tasks.get_tasks(include_done=args.get("include_done", False))
+
+        elif name == "task_complete":
+            tasks: TaskService = self.registry.get("todo")
+            completed = await tasks.complete_task(args["task_id"])
+            return {"completed": completed}
+
+        elif name == "task_delete":
+            tasks: TaskService = self.registry.get("todo")
+            deleted = await tasks.delete_task(args["task_id"])
+            return {"deleted": deleted}
+
+        elif name == "task_update":
+            tasks: TaskService = self.registry.get("todo")
+            updated = await tasks.update_task(
+                task_id=args["task_id"],
+                text=args.get("text"),
+                priority=args.get("priority"),
+                due_at=args.get("due_at"),
+            )
+            return updated or {"error": "Task not found"}
+
+        elif name == "task_suggest":
+            tasks: TaskService = self.registry.get("todo")
+            all_tasks = await tasks.get_tasks()
+            nudges = tasks.get_nudges()
+            return {"tasks": all_tasks, "nudges": nudges}
 
         # --- Notes ---
         elif name == "note_add":
@@ -194,22 +224,6 @@ class Agent:
             reminders: ReminderService = self.registry.get("reminders")
             return await reminders.list_notes()
 
-        # --- To-Do ---
-        elif name == "todo_add":
-            todo: TodoService = self.registry.get("todo")
-            return await todo.add_item(
-                text=args["text"],
-                priority=args.get("priority", ""),
-            )
-
-        elif name == "todo_list":
-            todo: TodoService = self.registry.get("todo")
-            return await todo.get_list()
-
-        elif name == "todo_complete":
-            todo: TodoService = self.registry.get("todo")
-            completed = await todo.complete_item(args["item_id"])
-            return {"completed": completed}
 
         # --- Calendar ---
         elif name == "get_calendar_events":

@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     icloud_caldav_password: str = ""
     calendar_cache_ttl: int = 900  # 15 minutes
 
+    # Task management
+    stale_task_days: int = 3           # days before unscheduled task is stale
+    stale_check_interval: int = 300    # seconds between stale checks (5 min)
+
     # Assistant
     assistant_name: str = "Bunty"
 

@@ -13,7 +13,7 @@ from .services.storage import StorageService
 from .services.grocery import GroceryService
 from .services.timers import TimerService
 from .services.reminders import ReminderService
-from .services.todo import TodoService
+from .services.todo import TaskService
 from .services.orders import AmazonOrdersService
 from .services.quote import QuoteService
 from .services.sysmon import SystemMonitorService
@@ -35,7 +35,7 @@ def run_server():
     grocery = GroceryService(storage)
     timers = TimerService()
     reminders = ReminderService(storage)
-    todo = TodoService(storage)
+    todo = TaskService(storage, settings)
     orders = AmazonOrdersService(storage, settings)
     quote = QuoteService(storage, cache, settings)
     sysmon = SystemMonitorService(cache)

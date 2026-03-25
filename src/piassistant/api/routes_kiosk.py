@@ -392,24 +392,45 @@ async def get_timers(request: Request):
     return {"timers": result, "fired": fired}
 
 
-# --- Reminders ---
+# --- Tasks (unified todos + reminders) ---
 
-@router.get("/reminders")
-async def get_reminders(request: Request):
-    reminders = request.app.state.registry.get("reminders")
-    return await reminders.list_reminders()
-
-
-@router.post("/reminders/{reminder_id}/done")
-async def complete_reminder(request: Request, reminder_id: int):
-    reminders = request.app.state.registry.get("reminders")
-    return {"completed": await reminders.complete_reminder(reminder_id)}
+@router.get("/tasks")
+async def get_tasks(request: Request):
+    """Get all active tasks and nudges."""
+    tasks = request.app.state.registry.get("todo")
+    return {
+        "tasks": await tasks.get_tasks(),
+        "nudges": tasks.get_nudges(),
+    }
 
 
-@router.delete("/reminders/{reminder_id}")
-async def delete_reminder(request: Request, reminder_id: int):
-    reminders = request.app.state.registry.get("reminders")
-    return {"deleted": await reminders.delete_reminder(reminder_id)}
+@router.post("/tasks/{task_id}/done")
+async def complete_task(request: Request, task_id: int):
+    tasks = request.app.state.registry.get("todo")
+    return {"completed": await tasks.complete_task(task_id)}
+
+
+@router.delete("/tasks/{task_id}")
+async def delete_task(request: Request, task_id: int):
+    tasks = request.app.state.registry.get("todo")
+    return {"deleted": await tasks.delete_task(task_id)}
+
+
+class TaskUpdateRequest(BaseModel):
+    text: str = None
+    priority: str = None
+    due_at: str = None
+
+
+@router.put("/tasks/{task_id}")
+async def update_task(request: Request, task_id: int, body: TaskUpdateRequest):
+    tasks = request.app.state.registry.get("todo")
+    updated = await tasks.update_task(
+        task_id=task_id, text=body.text, priority=body.priority, due_at=body.due_at
+    )
+    if not updated:
+        return {"error": "Task not found"}
+    return updated
 
 
 # --- Notes ---
@@ -424,23 +445,3 @@ async def get_notes(request: Request):
 async def delete_note(request: Request, note_id: int):
     reminders = request.app.state.registry.get("reminders")
     return {"deleted": await reminders.delete_note(note_id)}
-
-
-# --- Todos ---
-
-@router.get("/todos")
-async def get_todos(request: Request):
-    todo = request.app.state.registry.get("todo")
-    return await todo.get_list()
-
-
-@router.post("/todos/{item_id}/done")
-async def complete_todo(request: Request, item_id: int):
-    todo = request.app.state.registry.get("todo")
-    return {"completed": await todo.complete_item(item_id)}
-
-
-@router.delete("/todos/{item_id}")
-async def delete_todo(request: Request, item_id: int):
-    todo = request.app.state.registry.get("todo")
-    return {"deleted": await todo.delete_item(item_id)}

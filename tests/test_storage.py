@@ -52,5 +52,6 @@ class TestStorageService:
             assert "list_items" in tables
             assert "reminders" in tables
             assert "notes" in tables
+            assert "tasks" in tables
         finally:
             await db.close()

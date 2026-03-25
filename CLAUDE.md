@@ -100,8 +100,8 @@ PiAssistant/
 │       │   ├── storage.py    # SQLite persistence via aiosqlite
 │       │   ├── grocery.py    # Grocery lists by store
 │       │   ├── timers.py     # In-memory cooking timers (asyncio)
-│       │   ├── reminders.py  # Reminders + notes (SQLite)
-│       │   ├── todo.py       # To-do lists (SQLite)
+│       │   ├── reminders.py  # Notes (SQLite); reminders unified into tasks
+│       │   ├── todo.py       # TaskService: unified tasks + reminders (SQLite, stale nudging)
 │       │   ├── quote.py      # Daily inspirational quote (zenquotes.io + SQLite)
 │       │   ├── sysmon.py     # System monitor (psutil — CPU/RAM/disk/temp)
 │       │   ├── network.py    # Network device ping monitor (SQLite)
@@ -174,7 +174,7 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Kiosk features — SQLite persistence, grocery lists (6 default stores), cooking timers, reminders, notes, to-do lists
 - [x] Claude Code session monitor — HTTP hooks receiver, in-memory session tracking, dashboard widget
 - [x] Dashboard overhaul — CSS Grid widget layout (weather, sessions, timers, reminders, grocery, notes, todos, chat)
-- [x] 20 initial Claude tools (weather 2, news 2, grocery 4, timers 3, reminders 2, notes 2, todos 3)
+- [x] 20 initial Claude tools (weather 2, news 2, grocery 4, timers 3, reminders 2, notes 2, todos 3) — later unified into 31 tools
 - [x] Enhanced system prompt with all capabilities + free features (conversions, recipes, math)
 - [x] 31 initial tests passing
 - [x] Claude Code hooks configured on Mac — `~/.claude/settings.json` pushes 6 event types to Pi via HTTP hooks with X-Machine header
@@ -186,12 +186,13 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Pi System Monitor widget — psutil for CPU/RAM/disk/temp/uptime, 10s cache, color-coded progress bars
 - [x] Network Devices widget — ping-based monitoring, background 60s sweep, add/remove devices, SQLite persistence
 - [x] Calendar widget — Google Calendar OAuth2 + iCloud CalDAV, merged timeline view, color-coded sources
-- [x] 30 Claude tools (weather 2, news 2, calendar 2, network 2, sysmon 1, quote 1, orders 2, grocery 4, timers 3, reminders 2, notes 2, todos 3, system prompt updated)
+- [x] 31 Claude tools (weather 2, news 2, calendar 2, network 2, sysmon 1, quote 1, orders 2, grocery 4, timers 3, tasks 6, notes 2, system prompt updated)
 - [x] 60 tests passing
 - [x] Configurable display name — `assistant_name` setting (default "Bunty"), served via `/api/config`, dashboard fetches on load; change in `.env` without touching code
 - [x] LinkedIn post draft — `docs/linkedin-sessions-post.md` (Claude Code session monitor)
 - [x] Remote access — Cloudflare Tunnel (`bunty.akshayadav.com`), API key auth middleware (dormant), CLI auth, hooks env vars, 67 tests passing
 - [x] Web Terminal — xterm.js + WebSocket SSH bridge to Mac Mini, run Claude Code from dashboard, fullscreen toggle, "Start Claude" button, 67 tests passing
+- [x] Unified Task Management — merged todos + reminders into single `tasks` table, priority levels, due dates, background stale-task nudging (5-min asyncio loop), AI scheduling suggestions via `task_suggest` tool, dashboard visual + audio nudges, 86 tests passing
 
 ### Up Next (in priority order)
 1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail

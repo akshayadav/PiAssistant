@@ -41,6 +41,19 @@ CREATE TABLE IF NOT EXISTS notes (
     created_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    text TEXT NOT NULL,
+    priority TEXT DEFAULT '',
+    due_at TEXT DEFAULT '',
+    is_reminder INTEGER DEFAULT 0,
+    for_person TEXT DEFAULT '',
+    done INTEGER DEFAULT 0,
+    completed_at TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS weather_cities (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,

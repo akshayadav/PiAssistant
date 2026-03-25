@@ -144,6 +144,73 @@ async function shutdownPi() {
   }
 }
 
+// === Voice Input (Web Speech API) ===
+
+let _recognition = null;
+let _isListening = false;
+
+function toggleVoiceInput() {
+  if (_isListening) {
+    stopVoiceInput();
+    return;
+  }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    addMessage("Voice input not supported in this browser.", "bot error");
+    return;
+  }
+
+  _recognition = new SpeechRecognition();
+  _recognition.lang = "en-US";
+  _recognition.interimResults = true;
+  _recognition.continuous = false;
+
+  const micBtn = document.getElementById("mic-btn");
+  const input = document.getElementById("msg-input");
+  const originalPlaceholder = input.placeholder;
+
+  _recognition.onstart = () => {
+    _isListening = true;
+    micBtn.classList.add("listening");
+    input.placeholder = "Listening...";
+  };
+
+  _recognition.onresult = (event) => {
+    let transcript = "";
+    for (let i = 0; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+    input.value = transcript;
+  };
+
+  _recognition.onend = () => {
+    _isListening = false;
+    micBtn.classList.remove("listening");
+    input.placeholder = originalPlaceholder;
+    // Auto-send if we got text
+    if (input.value.trim()) {
+      sendMessage();
+    }
+  };
+
+  _recognition.onerror = (event) => {
+    _isListening = false;
+    micBtn.classList.remove("listening");
+    input.placeholder = originalPlaceholder;
+    if (event.error !== "no-speech") {
+      addMessage(`Voice error: ${event.error}`, "bot error");
+    }
+  };
+
+  _recognition.start();
+}
+
+function stopVoiceInput() {
+  if (_recognition) {
+    _recognition.stop();
+  }
+}
+
 // === Health ===
 
 async function checkHealth() {
@@ -733,38 +800,99 @@ async function toggleGrocery(id, done) {
   setTimeout(fetchGrocery, 300);
 }
 
-// === Reminders Widget ===
+// === Tasks Widget (unified todos + reminders) ===
 
-async function fetchReminders() {
-  const el = document.getElementById("reminders-content");
-  const countEl = document.getElementById("reminders-count");
+let _lastNudgeIds = new Set();
+
+function formatDueDate(dueAt) {
+  if (!dueAt) return "";
+  const due = new Date(dueAt);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+
+  if (due < now) return '<span class="task-due task-overdue">Overdue</span>';
+  if (dueDay.getTime() === today.getTime()) return '<span class="task-due task-due-today">Today</span>';
+  if (dueDay.getTime() === tomorrow.getTime()) return '<span class="task-due">Tomorrow</span>';
+  return `<span class="task-due">${due.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>`;
+}
+
+function playNudgeChime() {
   try {
-    const res = await fetch("/api/reminders");
-    if (!res.ok) throw new Error();
-    const reminders = await res.json();
-    countEl.textContent = reminders.length;
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+  } catch {}
+}
 
-    if (reminders.length === 0) {
-      el.innerHTML = '<div class="empty-state">No reminders</div>';
+async function fetchTasks() {
+  const el = document.getElementById("tasks-content");
+  const countEl = document.getElementById("tasks-count");
+  const bannerEl = document.getElementById("tasks-nudge-banner");
+  try {
+    const res = await fetch("/api/tasks");
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const tasks = data.tasks || [];
+    const nudges = data.nudges || [];
+    const nudgeIds = new Set(nudges.map(n => n.task_id));
+
+    countEl.textContent = tasks.length;
+
+    // Nudge banner
+    if (nudges.length > 0) {
+      bannerEl.style.display = "";
+      bannerEl.innerHTML = `&#9888; ${nudges.length} task${nudges.length > 1 ? "s" : ""} need${nudges.length === 1 ? "s" : ""} attention`;
+      // Play chime for new nudges
+      const hasNew = nudges.some(n => !_lastNudgeIds.has(n.task_id));
+      if (hasNew && _lastNudgeIds.size > 0) playNudgeChime();
+    } else {
+      bannerEl.style.display = "none";
+    }
+    _lastNudgeIds = nudgeIds;
+
+    if (tasks.length === 0) {
+      el.innerHTML = '<div class="empty-state">No tasks</div>';
       return;
     }
 
-    el.innerHTML = reminders.map(r => `
-      <div class="reminder-item">
-        <input type="checkbox" onchange="completeReminder(${r.id})">
-        <span>${r.text}</span>
-        ${r.due_at ? `<span class="reminder-due">${r.due_at}</span>` : ""}
-        ${r.for_person ? `<span class="reminder-person">@${r.for_person}</span>` : ""}
-      </div>
-    `).join("");
+    el.innerHTML = tasks.map(t => {
+      const isStale = nudgeIds.has(t.id);
+      const priorityCls = t.priority ? `task-priority-${t.priority}` : "";
+      const staleCls = isStale ? "task-stale" : "";
+      const reminderCls = t.is_reminder ? "task-reminder" : "";
+      return `
+        <div class="task-item ${priorityCls} ${staleCls} ${reminderCls} ${t.done ? 'done' : ''}">
+          <input type="checkbox" ${t.done ? "checked" : ""} onchange="completeTask(${t.id})">
+          <span class="task-text">${t.is_reminder ? "&#128276; " : ""}${t.text}</span>
+          ${t.for_person ? `<span class="task-person">@${t.for_person}</span>` : ""}
+          ${formatDueDate(t.due_at)}
+          <button class="task-delete-btn" onclick="deleteTask(${t.id})" title="Delete">&times;</button>
+        </div>`;
+    }).join("");
   } catch {
-    el.innerHTML = '<div class="empty-state">Reminders unavailable</div>';
+    el.innerHTML = '<div class="empty-state">Tasks unavailable</div>';
   }
 }
 
-async function completeReminder(id) {
-  await fetch(`/api/reminders/${id}/done`, { method: "POST", headers: authHeadersNoBody() });
-  setTimeout(fetchReminders, 300);
+async function completeTask(id) {
+  await fetch(`/api/tasks/${id}/done`, { method: "POST", headers: authHeadersNoBody() });
+  setTimeout(fetchTasks, 300);
+}
+
+async function deleteTask(id) {
+  await fetch(`/api/tasks/${id}`, { method: "DELETE", headers: authHeadersNoBody() });
+  setTimeout(fetchTasks, 300);
 }
 
 // === Notes Widget ===
@@ -793,37 +921,6 @@ async function fetchNotes() {
   }
 }
 
-// === Todos Widget ===
-
-async function fetchTodos() {
-  const el = document.getElementById("todos-content");
-  const countEl = document.getElementById("todos-count");
-  try {
-    const res = await fetch("/api/todos");
-    if (!res.ok) throw new Error();
-    const todos = await res.json();
-    countEl.textContent = todos.length;
-
-    if (todos.length === 0) {
-      el.innerHTML = '<div class="empty-state">No to-dos</div>';
-      return;
-    }
-
-    el.innerHTML = todos.map(t => `
-      <div class="todo-item ${t.done ? 'done' : ''} ${t.priority ? 'todo-priority-' + t.priority : ''}">
-        <input type="checkbox" ${t.done ? 'checked' : ''} onchange="completeTodo(${t.id})">
-        <span>${t.text}</span>
-      </div>
-    `).join("");
-  } catch {
-    el.innerHTML = '<div class="empty-state">Todos unavailable</div>';
-  }
-}
-
-async function completeTodo(id) {
-  await fetch(`/api/todos/${id}/done`, { method: "POST", headers: authHeadersNoBody() });
-  setTimeout(fetchTodos, 300);
-}
 
 // === Terminal Widget ===
 
@@ -1003,10 +1100,9 @@ function refreshAll() {
   fetchNews();
   fetchOrders();
   fetchGrocery();
-  fetchReminders();
+  fetchTasks();
   fetchQuote();
   fetchNotes();
-  fetchTodos();
 }
 
 // === Init ===
@@ -1023,9 +1119,8 @@ setInterval(fetchSessions, 2000);     // 2 sec
 setInterval(fetchTimers, 1000);       // 1 sec
 setInterval(fetchOrders, 300000);     // 5 min
 setInterval(fetchGrocery, 30000);     // 30 sec
-setInterval(fetchReminders, 30000);   // 30 sec
+setInterval(fetchTasks, 15000);       // 15 sec
 setInterval(fetchNotes, 30000);       // 30 sec
-setInterval(fetchTodos, 30000);       // 30 sec
 setInterval(fetchQuote, 3600000);     // 1 hour
 setInterval(fetchSystem, 10000);      // 10 sec
 setInterval(fetchNetwork, 30000);     // 30 sec
