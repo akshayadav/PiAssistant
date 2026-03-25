@@ -193,6 +193,8 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Remote access — Cloudflare Tunnel (`bunty.akshayadav.com`), API key auth middleware (dormant), CLI auth, hooks env vars, 67 tests passing
 - [x] Web Terminal — xterm.js + WebSocket SSH bridge to Mac Mini, run Claude Code from dashboard, fullscreen toggle, "Start Claude" button, 67 tests passing
 - [x] Unified Task Management — merged todos + reminders into single `tasks` table, priority levels, due dates, background stale-task nudging (5-min asyncio loop), AI scheduling suggestions via `task_suggest` tool, dashboard visual + audio nudges, 86 tests passing
+- [x] Task Auto-Do — Claude evaluates each new task against available tools; if it can fulfill the task (weather, calendar, orders, etc.), it does it immediately and marks complete
+- [x] Voice Input — Web Speech API mic button on dashboard, speech-to-text auto-sends to chat, works in Chromium kiosk
 
 ### Up Next (in priority order)
 1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
