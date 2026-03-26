@@ -54,6 +54,54 @@ CREATE TABLE IF NOT EXISTS tasks (
     updated_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS store_categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL UNIQUE,
+    display_name TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS stores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    category_slug TEXT NOT NULL,
+    location TEXT DEFAULT '',
+    notes TEXT DEFAULT '',
+    active INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT DEFAULT '',
+    default_store_category TEXT DEFAULT '',
+    brand TEXT DEFAULT '',
+    unit TEXT DEFAULT '',
+    notes TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS price_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER REFERENCES products(id),
+    store_id INTEGER REFERENCES stores(id),
+    price REAL NOT NULL,
+    quantity TEXT DEFAULT '',
+    unit_price REAL,
+    source TEXT DEFAULT 'user',
+    url TEXT DEFAULT '',
+    observed_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS item_preferences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER REFERENCES products(id),
+    preferred_store_id INTEGER,
+    preferred_brand TEXT DEFAULT '',
+    notes TEXT DEFAULT '',
+    updated_at TEXT DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS weather_cities (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
@@ -88,12 +136,18 @@ class StorageService(BaseService):
             await db.execute("PRAGMA foreign_keys = ON")
             await db.executescript(SCHEMA)
             # Migrations for columns added after initial schema
-            try:
-                await db.execute(
-                    "ALTER TABLE news_feeds ADD COLUMN provider TEXT DEFAULT 'newsapi'"
-                )
-            except Exception:
-                pass  # Column already exists
+            migrations = [
+                "ALTER TABLE news_feeds ADD COLUMN provider TEXT DEFAULT 'newsapi'",
+                "ALTER TABLE list_items ADD COLUMN product_id INTEGER DEFAULT NULL",
+                "ALTER TABLE list_items ADD COLUMN price REAL DEFAULT NULL",
+                "ALTER TABLE list_items ADD COLUMN brand TEXT DEFAULT ''",
+                "ALTER TABLE list_items ADD COLUMN notes TEXT DEFAULT ''",
+            ]
+            for migration in migrations:
+                try:
+                    await db.execute(migration)
+                except Exception:
+                    pass  # Column already exists
             await db.commit()
 
     async def health_check(self) -> dict:
