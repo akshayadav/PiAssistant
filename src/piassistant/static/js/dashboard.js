@@ -642,9 +642,57 @@ async function removeNewsFeed(id) {
   fetchNews();
 }
 
+// === TTS Engine (backend Kokoro/Piper with browser fallback) ===
+let _ttsAudio = null;
+let _ttsSpeaking = false;
+
+async function speakText(text, onStart, onEnd) {
+  if (_ttsSpeaking) { stopSpeaking(); if (onEnd) onEnd(); return; }
+  try {
+    const res = await fetch("/api/voice/speak", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error("TTS backend error");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    _ttsAudio = new Audio(url);
+    _ttsAudio.onplay = () => { _ttsSpeaking = true; if (onStart) onStart(); };
+    _ttsAudio.onended = () => { _cleanupTTS(); if (onEnd) onEnd(); };
+    _ttsAudio.onerror = () => { _cleanupTTS(); if (onEnd) onEnd(); };
+    _ttsAudio.play();
+  } catch {
+    // Fallback: browser TTS
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.95;
+    u.onstart = onStart;
+    u.onend = onEnd;
+    u.onerror = onEnd;
+    speechSynthesis.speak(u);
+  }
+}
+
+function stopSpeaking() {
+  if (_ttsAudio) { _ttsAudio.pause(); _ttsAudio.currentTime = 0; }
+  _cleanupTTS();
+  speechSynthesis.cancel();
+}
+
+function _cleanupTTS() {
+  if (_ttsAudio) {
+    const src = _ttsAudio.src;
+    _ttsAudio = null;
+    if (src.startsWith("blob:")) URL.revokeObjectURL(src);
+  }
+  _ttsSpeaking = false;
+}
+
 function speakNews() {
   if (newsSpeaking) {
-    speechSynthesis.cancel();
+    stopSpeaking();
+    newsSpeaking = false;
+    setNewsTTSButton(false);
     return;
   }
 
@@ -656,12 +704,11 @@ function speakNews() {
   }
   if (!lines.length) return;
 
-  const utterance = new SpeechSynthesisUtterance(lines.join(" "));
-  utterance.rate = 0.95;
-  utterance.onstart = () => { newsSpeaking = true; setNewsTTSButton(true); };
-  utterance.onend = () => { newsSpeaking = false; setNewsTTSButton(false); };
-  utterance.onerror = () => { newsSpeaking = false; setNewsTTSButton(false); };
-  speechSynthesis.speak(utterance);
+  speakText(
+    lines.join(" "),
+    () => { newsSpeaking = true; setNewsTTSButton(true); },
+    () => { newsSpeaking = false; setNewsTTSButton(false); }
+  );
 }
 
 function setNewsTTSButton(speaking) {

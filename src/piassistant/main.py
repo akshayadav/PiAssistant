@@ -19,6 +19,7 @@ from .services.quote import QuoteService
 from .services.sysmon import SystemMonitorService
 from .services.network import NetworkService
 from .services.calendar import CalendarService
+from .services.tts import TTSService
 from .brain.agent import Agent
 from .api.app import create_app
 
@@ -41,6 +42,7 @@ def run_server():
     sysmon = SystemMonitorService(cache)
     network = NetworkService(storage)
     calendar = CalendarService(cache, settings)
+    tts = TTSService(settings)
 
     # Register
     registry = ServiceRegistry()
@@ -58,6 +60,7 @@ def run_server():
     registry.register(sysmon)
     registry.register(network)
     registry.register(calendar)
+    registry.register(tts)
 
     # Brain
     agent = Agent(llm, registry, settings)

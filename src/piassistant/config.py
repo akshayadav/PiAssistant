@@ -58,6 +58,13 @@ class Settings(BaseSettings):
     terminal_ssh_port: int = 22
     terminal_password: str = ""  # Required to use terminal; empty = terminal disabled
 
+    # TTS (Text-to-Speech)
+    tts_kokoro_url: str = ""          # Kokoro-FastAPI on Mac Mini, e.g. "http://macmini.local:8880"
+    tts_kokoro_voice: str = "af_nova" # Kokoro voice name
+    tts_piper_enabled: bool = True    # Enable Piper TTS fallback on Pi
+    tts_piper_model: str = ""         # Path to Piper .onnx voice model (empty = disabled)
+    tts_speed: float = 1.0            # Speech speed multiplier
+
     # API key for protecting write endpoints (POST/PUT/DELETE/PATCH)
     # Leave empty to allow all requests (local-only mode)
     api_key: str = ""
