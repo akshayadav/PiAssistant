@@ -645,12 +645,28 @@ async function removeNewsFeed(id) {
 // === TTS Engine (backend Kokoro/Piper with browser fallback) ===
 let _ttsAudio = null;
 let _ttsSpeaking = false;
+let _ttsMediaSource = null;
 
 async function speakText(text, onStart, onEnd) {
   if (_ttsSpeaking) { stopSpeaking(); if (onEnd) onEnd(); return; }
   const t0 = performance.now();
   console.log("[TTS] speakText called, text length:", text.length, "chars");
-  console.log("[TTS] Sending POST /api/voice/speak to Pi backend...");
+
+  // Try streaming if MediaSource supports MP3
+  const canStream = typeof MediaSource !== "undefined" &&
+    MediaSource.isTypeSupported("audio/mpeg");
+  if (canStream) {
+    console.log("[TTS] Streaming mode — POST /api/voice/speak {stream:true}");
+    try {
+      await _speakStreaming(text, t0, onStart, onEnd);
+      return;
+    } catch (err) {
+      console.warn("[TTS] Streaming failed:", err.message, "— trying non-streaming");
+    }
+  }
+
+  // Non-streaming fallback (full blob)
+  console.log("[TTS] Non-streaming mode — POST /api/voice/speak");
   try {
     const res = await fetch("/api/voice/speak", {
       method: "POST",
@@ -661,34 +677,84 @@ async function speakText(text, onStart, onEnd) {
     console.log("[TTS] Backend responded:", res.status, "in", Math.round(t1 - t0), "ms");
     if (!res.ok) throw new Error("TTS backend error " + res.status);
     const blob = await res.blob();
-    const t2 = performance.now();
-    console.log("[TTS] Audio blob received:", blob.size, "bytes,", blob.type, "in", Math.round(t2 - t0), "ms total");
+    console.log("[TTS] Audio blob:", blob.size, "bytes in", Math.round(performance.now() - t0), "ms");
     const url = URL.createObjectURL(blob);
     _ttsAudio = new Audio(url);
     _ttsAudio.onplay = () => {
-      const t3 = performance.now();
-      console.log("[TTS] Audio playback started, total latency:", Math.round(t3 - t0), "ms");
-      _ttsSpeaking = true;
-      if (onStart) onStart();
+      console.log("[TTS] Playback started, TTFA:", Math.round(performance.now() - t0), "ms");
+      _ttsSpeaking = true; if (onStart) onStart();
     };
-    _ttsAudio.onended = () => {
-      console.log("[TTS] Audio playback ended");
-      _cleanupTTS(); if (onEnd) onEnd();
-    };
-    _ttsAudio.onerror = (e) => {
-      console.error("[TTS] Audio playback error:", e);
-      _cleanupTTS(); if (onEnd) onEnd();
-    };
+    _ttsAudio.onended = () => { console.log("[TTS] Playback ended"); _cleanupTTS(); if (onEnd) onEnd(); };
+    _ttsAudio.onerror = () => { _cleanupTTS(); if (onEnd) onEnd(); };
     _ttsAudio.play();
   } catch (err) {
-    console.warn("[TTS] Backend failed:", err.message, "— falling back to browser speechSynthesis");
+    console.warn("[TTS] Backend failed:", err.message, "— browser speechSynthesis fallback");
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 0.95;
-    u.onstart = onStart;
-    u.onend = onEnd;
-    u.onerror = onEnd;
+    u.onstart = onStart; u.onend = onEnd; u.onerror = onEnd;
     speechSynthesis.speak(u);
   }
+}
+
+async function _speakStreaming(text, t0, onStart, onEnd) {
+  const res = await fetch("/api/voice/speak", {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ text, stream: true }),
+  });
+  if (!res.ok) throw new Error("TTS stream error " + res.status);
+  console.log("[TTS] Stream response started in", Math.round(performance.now() - t0), "ms");
+
+  const mediaSource = new MediaSource();
+  _ttsMediaSource = mediaSource;
+  _ttsAudio = new Audio();
+  _ttsAudio.src = URL.createObjectURL(mediaSource);
+
+  _ttsAudio.onplay = () => {
+    console.log("[TTS] Stream playback started, TTFA:", Math.round(performance.now() - t0), "ms");
+    _ttsSpeaking = true; if (onStart) onStart();
+  };
+  _ttsAudio.onended = () => { console.log("[TTS] Stream playback ended"); _cleanupTTS(); if (onEnd) onEnd(); };
+  _ttsAudio.onerror = (e) => { console.error("[TTS] Stream playback error:", e); _cleanupTTS(); if (onEnd) onEnd(); };
+
+  await new Promise((resolve, reject) => {
+    mediaSource.addEventListener("sourceopen", async () => {
+      try {
+        const sourceBuffer = mediaSource.addSourceBuffer("audio/mpeg");
+        const reader = res.body.getReader();
+        let chunkNum = 0, totalBytes = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunkNum++;
+          totalBytes += value.byteLength;
+          if (chunkNum === 1) {
+            console.log("[TTS] First chunk:", value.byteLength, "bytes at", Math.round(performance.now() - t0), "ms");
+          }
+          // Wait for sourceBuffer to be ready
+          if (sourceBuffer.updating) {
+            await new Promise(r => sourceBuffer.addEventListener("updateend", r, { once: true }));
+          }
+          sourceBuffer.appendBuffer(value);
+          // Start playback after first chunk is appended
+          if (chunkNum === 1) {
+            await new Promise(r => sourceBuffer.addEventListener("updateend", r, { once: true }));
+            _ttsAudio.play();
+          }
+        }
+        console.log("[TTS] Stream complete:", chunkNum, "chunks,", totalBytes, "bytes in", Math.round(performance.now() - t0), "ms");
+        // Wait for final buffer update before ending stream
+        if (sourceBuffer.updating) {
+          await new Promise(r => sourceBuffer.addEventListener("updateend", r, { once: true }));
+        }
+        if (mediaSource.readyState === "open") mediaSource.endOfStream();
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    }, { once: true });
+  });
 }
 
 function stopSpeaking() {
@@ -698,6 +764,10 @@ function stopSpeaking() {
 }
 
 function _cleanupTTS() {
+  if (_ttsMediaSource && _ttsMediaSource.readyState === "open") {
+    try { _ttsMediaSource.endOfStream(); } catch {}
+  }
+  _ttsMediaSource = null;
   if (_ttsAudio) {
     const src = _ttsAudio.src;
     _ttsAudio = null;

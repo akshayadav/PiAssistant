@@ -202,3 +202,21 @@ class TestVoiceEndpoints:
         assert r.status_code == 200
         data = r.json()
         assert "tts_available" in data
+
+    @pytest.mark.asyncio
+    async def test_speak_stream_returns_audio_mpeg(self, tts_client):
+        fake_mp3 = b"\xff\xfb\x90\x00" + b"\x00" * 100
+
+        async def fake_stream(text):
+            yield fake_mp3
+
+        with patch.object(TTSService, "synthesize_stream", side_effect=fake_stream):
+            r = await tts_client.post("/api/voice/speak", json={"text": "hello", "stream": True})
+            assert r.status_code == 200
+            assert r.headers["content-type"] == "audio/mpeg"
+            assert len(r.content) > 0
+
+    @pytest.mark.asyncio
+    async def test_speak_stream_empty_text_returns_400(self, tts_client):
+        r = await tts_client.post("/api/voice/speak", json={"text": "", "stream": True})
+        assert r.status_code == 400
