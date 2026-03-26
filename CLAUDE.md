@@ -105,7 +105,8 @@ PiAssistant/
 │       │   ├── quote.py      # Daily inspirational quote (zenquotes.io + SQLite)
 │       │   ├── sysmon.py     # System monitor (psutil — CPU/RAM/disk/temp)
 │       │   ├── network.py    # Network device ping monitor (SQLite)
-│       │   └── calendar.py   # Calendar events (Google + iCloud CalDAV)
+│       │   ├── calendar.py   # Calendar events (Google + iCloud CalDAV)
+│       │   └── tts.py        # Text-to-speech (Kokoro on Mac Mini + Piper on Pi)
 │       ├── brain/
 │       │   ├── agent.py      # Tool-use loop: user msg → Claude → tools → response
 │       │   └── tools.py      # Tool definitions for Claude (30 tools)
@@ -117,7 +118,8 @@ PiAssistant/
 │       │   ├── routes_health.py     # /api/health, /api/config — diagnostics + frontend config
 │       │   ├── routes_kiosk.py      # /api/grocery, /api/timers, etc. — widget data
 │       │   ├── routes_hooks.py      # /api/hooks/* — Claude Code session monitor
-│       │   └── routes_terminal.py   # /api/terminal/* — WebSocket SSH bridge to Mac Mini
+│       │   ├── routes_terminal.py   # /api/terminal/* — WebSocket SSH bridge to Mac Mini
+│       │   └── routes_voice.py      # /api/voice/* — TTS speak + config
 │       ├── static/
 │       │   ├── index.html           # Web dashboard with widget grid
 │       │   ├── css/dashboard.css    # Dashboard styles
@@ -181,7 +183,7 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Walkthrough doc: `docs/claude-session-monitor.md`
 - [x] News dashboard widget — 4 configurable feeds (Global, India, Indore, Santa Clara), 6-hour cache TTL, add/remove from UI
 - [x] Walkthrough doc: `docs/news-dashboard-widget.md`
-- [x] Read headlines aloud — browser TTS (Web Speech API), ▶ Read / ■ Stop button in news widget header
+- [x] Read headlines aloud — ▶ Read / ■ Stop button in news widget header
 - [x] Daily Quote widget — zenquotes.io API, 24h cache, SQLite persistence, fallback quotes
 - [x] Pi System Monitor widget — psutil for CPU/RAM/disk/temp/uptime, 10s cache, color-coded progress bars
 - [x] Network Devices widget — ping-based monitoring, background 60s sweep, add/remove devices, SQLite persistence
@@ -195,10 +197,11 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Unified Task Management — merged todos + reminders into single `tasks` table, priority levels, due dates, background stale-task nudging (5-min asyncio loop), AI scheduling suggestions via `task_suggest` tool, dashboard visual + audio nudges, 86 tests passing
 - [x] Task Auto-Do — Claude evaluates each new task against available tools; if it can fulfill the task (weather, calendar, orders, etc.), it does it immediately and marks complete
 - [x] Voice Input — Web Speech API mic button on dashboard, speech-to-text auto-sends to chat, works in Chromium kiosk
+- [x] Human-like TTS — Kokoro TTS on Mac Mini (primary) + Piper TTS on Pi (fallback) + browser TTS (last resort). TTSService, `/api/voice/speak` endpoint, `speakText()` JS utility, 98 tests passing
 
 ### Up Next (in priority order)
 1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
-2. **Voice (STT/TTS)** — hands-free interaction, offloaded to Mac Mini
+2. **Voice STT** — speech-to-text for hands-free interaction, offloaded to Mac Mini
 3. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
 
 ### Future
@@ -330,7 +333,7 @@ Terminal section is hidden when not configured. WebSocket auth uses `?token=` qu
 
 | Feature | How architecture accommodates it |
 |---|---|
-| Voice (STT/TTS) | Add `STTService`/`TTSService` → brain receives text from STT instead of HTTP |
+| Voice STT | Add `STTService` → brain receives text from STT instead of HTTP (TTS already implemented) |
 | Web UI | FastAPI serves JSON → add frontend that calls `/api/chat` |
 | MQTT push | Hook into cache updates → publish to MQTT topics on refresh |
 | Mac Mini offload | Change service backends (LLM, STT) to call Mac Mini HTTP endpoints |

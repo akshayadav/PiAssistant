@@ -10,7 +10,14 @@ router = APIRouter()
 async def get_config(request: Request):
     """Return public config for the frontend."""
     settings = request.app.state.settings
-    return {"assistant_name": settings.assistant_name}
+    tts_available = False
+    try:
+        tts = request.app.state.registry.get("tts")
+        health = await tts.health_check()
+        tts_available = health["healthy"]
+    except KeyError:
+        pass
+    return {"assistant_name": settings.assistant_name, "tts_available": tts_available}
 
 
 @router.get("/health")
