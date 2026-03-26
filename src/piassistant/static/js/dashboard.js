@@ -648,22 +648,40 @@ let _ttsSpeaking = false;
 
 async function speakText(text, onStart, onEnd) {
   if (_ttsSpeaking) { stopSpeaking(); if (onEnd) onEnd(); return; }
+  const t0 = performance.now();
+  console.log("[TTS] speakText called, text length:", text.length, "chars");
+  console.log("[TTS] Sending POST /api/voice/speak to Pi backend...");
   try {
     const res = await fetch("/api/voice/speak", {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ text }),
     });
-    if (!res.ok) throw new Error("TTS backend error");
+    const t1 = performance.now();
+    console.log("[TTS] Backend responded:", res.status, "in", Math.round(t1 - t0), "ms");
+    if (!res.ok) throw new Error("TTS backend error " + res.status);
     const blob = await res.blob();
+    const t2 = performance.now();
+    console.log("[TTS] Audio blob received:", blob.size, "bytes,", blob.type, "in", Math.round(t2 - t0), "ms total");
     const url = URL.createObjectURL(blob);
     _ttsAudio = new Audio(url);
-    _ttsAudio.onplay = () => { _ttsSpeaking = true; if (onStart) onStart(); };
-    _ttsAudio.onended = () => { _cleanupTTS(); if (onEnd) onEnd(); };
-    _ttsAudio.onerror = () => { _cleanupTTS(); if (onEnd) onEnd(); };
+    _ttsAudio.onplay = () => {
+      const t3 = performance.now();
+      console.log("[TTS] Audio playback started, total latency:", Math.round(t3 - t0), "ms");
+      _ttsSpeaking = true;
+      if (onStart) onStart();
+    };
+    _ttsAudio.onended = () => {
+      console.log("[TTS] Audio playback ended");
+      _cleanupTTS(); if (onEnd) onEnd();
+    };
+    _ttsAudio.onerror = (e) => {
+      console.error("[TTS] Audio playback error:", e);
+      _cleanupTTS(); if (onEnd) onEnd();
+    };
     _ttsAudio.play();
-  } catch {
-    // Fallback: browser TTS
+  } catch (err) {
+    console.warn("[TTS] Backend failed:", err.message, "— falling back to browser speechSynthesis");
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 0.95;
     u.onstart = onStart;
@@ -689,7 +707,9 @@ function _cleanupTTS() {
 }
 
 function speakNews() {
+  console.log("[TTS] === Read button clicked ===");
   if (newsSpeaking) {
+    console.log("[TTS] Already speaking, stopping");
     stopSpeaking();
     newsSpeaking = false;
     setNewsTTSButton(false);
@@ -702,7 +722,8 @@ function speakNews() {
     lines.push(feed.name + ".");
     for (const a of feed.articles) lines.push(a.title + ".");
   }
-  if (!lines.length) return;
+  if (!lines.length) { console.log("[TTS] No headlines to read"); return; }
+  console.log("[TTS] Collected", lines.length, "lines from", newsFeedsData.length, "feeds");
 
   speakText(
     lines.join(" "),
