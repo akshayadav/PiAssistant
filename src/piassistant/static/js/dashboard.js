@@ -9,6 +9,7 @@ const timerAlertText = document.getElementById("timer-alert-text");
 
 let sending = false;
 let assistantName = "Assistant";
+let voiceResponseEnabled = localStorage.getItem("voice_response") === "true";
 
 // === API Key / Auth ===
 
@@ -110,6 +111,7 @@ async function sendMessage() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     addMessage(data.response, "bot");
+    if (voiceResponseEnabled) speakText(data.response);
     // Refresh widgets after chat (user may have added items)
     refreshAll();
   } catch (err) {
@@ -775,6 +777,22 @@ function _cleanupTTS() {
   }
   _ttsSpeaking = false;
 }
+
+// === Voice Response Toggle ===
+function toggleVoiceResponse() {
+  voiceResponseEnabled = !voiceResponseEnabled;
+  localStorage.setItem("voice_response", voiceResponseEnabled);
+  updateVoiceResponseBtn();
+  if (!voiceResponseEnabled) stopSpeaking();
+}
+
+function updateVoiceResponseBtn() {
+  const btn = document.getElementById("voice-resp-btn");
+  if (!btn) return;
+  btn.textContent = voiceResponseEnabled ? "\u{1F50A} Voice" : "\u{1F507} Voice";
+  btn.title = voiceResponseEnabled ? "Voice responses ON — click to mute" : "Voice responses OFF — click to unmute";
+}
+updateVoiceResponseBtn();
 
 function speakNews() {
   console.log("[TTS] === Read button clicked ===");
