@@ -64,8 +64,17 @@ class Agent:
             f"You are {self.settings.assistant_name}, a smart home assistant running on a Raspberry Pi 5.\n"
             f"You help with weather, news, grocery lists, timers, reminders, notes, to-dos, and general questions.\n\n"
             f"TOOLS: Use your tools for real-time data and persistent actions. Do NOT guess — use the tool.\n\n"
-            f"GROCERY STORES: Default stores are Whole Foods, Sprouts, Indian Grocery, Costco, Target, Other.\n"
-            f"If the user doesn't specify a store, ask which store, or use 'Other' if they want it generic.\n"
+            f"SMART GROCERY: You are a shopping assistant. When the user wants to buy something:\n"
+            f"1. Call grocery_find to check the product catalog, store recommendations, and price history.\n"
+            f"2. If the product is known with a preference, suggest that option. If not, use your knowledge\n"
+            f"   of the store categories to recommend where to buy it.\n"
+            f"3. Present options to the user with prices if available.\n"
+            f"4. When the user decides, call grocery_add with the chosen store.\n"
+            f"Store categories: Indian Stores (New India Bazaar, India Cash and Carry, Apna Mandi — rice, spices, dal, ghee),\n"
+            f"Bulk/Warehouse (Costco — bulk items, paper goods), Regular Grocery (Safeway, Lucky, Target — household items),\n"
+            f"Produce & Meat (Sprouts, Whole Foods — fruits, veggies, meat, organic), Online (Amazon).\n"
+            f"When the user reports a price (e.g. 'rice was $13 at NIB'), call grocery_price to save it.\n"
+            f"When the user states a preference ('always get X from Y'), call grocery_preference to save it.\n"
             f"When adding multiple items, call grocery_add once per item.\n\n"
             f"TIMERS: Convert user's time to seconds (e.g. '12 minutes' = 720 seconds).\n"
             f"TASKS: Use task_add for things the user needs to do, action items, and reminders.\n"
@@ -146,6 +155,9 @@ class Agent:
                 store=args["store"],
                 item=args["item"],
                 quantity=args.get("quantity", ""),
+                price=args.get("price"),
+                brand=args.get("brand", ""),
+                notes=args.get("notes", ""),
             )
 
         elif name == "grocery_list":
@@ -161,6 +173,52 @@ class Agent:
             grocery: GroceryService = self.registry.get("grocery")
             count = await grocery.clear_done(store=args.get("store"))
             return {"cleared": count}
+
+        elif name == "grocery_find":
+            grocery: GroceryService = self.registry.get("grocery")
+            return await grocery.get_recommendation(product_name=args["query"])
+
+        elif name == "grocery_stores":
+            grocery: GroceryService = self.registry.get("grocery")
+            return await grocery.get_stores(category=args.get("category"))
+
+        elif name == "grocery_price":
+            grocery: GroceryService = self.registry.get("grocery")
+            product = await grocery.get_or_create_product(args["product_name"])
+            store_id = await grocery.get_store_id(args["store_name"])
+            if not store_id:
+                # Auto-create the store with best-guess category
+                category = grocery._guess_store_category(args["product_name"]) or "regular"
+                new_store = await grocery.add_store(args["store_name"], category)
+                store_id = new_store["id"]
+            return await grocery.record_price(
+                product_id=product["id"],
+                store_id=store_id,
+                price=args["price"],
+                quantity=args.get("quantity", ""),
+                unit_price=args.get("unit_price"),
+            )
+
+        elif name == "grocery_preference":
+            grocery: GroceryService = self.registry.get("grocery")
+            product = await grocery.get_or_create_product(args["product_name"])
+            store_id = None
+            if args.get("preferred_store"):
+                store_id = await grocery.get_store_id(args["preferred_store"])
+            return await grocery.set_preference(
+                product_id=product["id"],
+                preferred_store_id=store_id,
+                preferred_brand=args.get("preferred_brand", ""),
+                notes=args.get("notes", ""),
+            )
+
+        elif name == "grocery_prices":
+            grocery: GroceryService = self.registry.get("grocery")
+            product_id = await grocery.get_product_id(args["product_name"])
+            if not product_id:
+                return {"prices": [], "message": f"No product '{args['product_name']}' in catalog yet."}
+            prices = await grocery.get_price_history(product_id)
+            return {"product": args["product_name"], "prices": prices}
 
         # --- Timers ---
         elif name == "timer_set":

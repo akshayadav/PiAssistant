@@ -93,21 +93,40 @@ TOOL_DEFINITIONS = [
     # --- Grocery ---
     {
         "name": "grocery_add",
-        "description": "Add an item to a grocery store list. Default stores: Whole Foods, Sprouts, Indian Grocery, Costco, Target, Other. New store names are created automatically.",
+        "description": (
+            "Add an item to a grocery store list. "
+            "Stores: New India Bazaar, India Cash and Carry, Apna Mandi (Indian), "
+            "Costco (Bulk), Safeway, Lucky, Target (Regular), Sprouts, Whole Foods (Produce), Amazon (Online). "
+            "New store names are created automatically."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "store": {
                     "type": "string",
-                    "description": "Store name, e.g. 'Whole Foods', 'Costco'",
+                    "description": "Store name, e.g. 'Costco', 'New India Bazaar'",
                 },
                 "item": {
                     "type": "string",
-                    "description": "Item to add, e.g. 'milk', 'bananas'",
+                    "description": "Item to add, e.g. 'Basmati Rice', 'bananas'",
                 },
                 "quantity": {
                     "type": "string",
-                    "description": "Optional quantity, e.g. '2 lbs', '1 gallon'",
+                    "description": "Optional quantity, e.g. '10 lb bag', '1 gallon'",
+                    "default": "",
+                },
+                "price": {
+                    "type": "number",
+                    "description": "Optional price in dollars, e.g. 12.99",
+                },
+                "brand": {
+                    "type": "string",
+                    "description": "Optional brand, e.g. 'Daawat', 'Kirkland'",
+                    "default": "",
+                },
+                "notes": {
+                    "type": "string",
+                    "description": "Optional notes, e.g. 'organic', 'check sale price'",
                     "default": "",
                 },
             },
@@ -152,6 +171,119 @@ TOOL_DEFINITIONS = [
                     "description": "Optional store name. Omit to clear all done items.",
                 },
             },
+        },
+    },
+    {
+        "name": "grocery_find",
+        "description": (
+            "Search for a product and get smart store recommendations. "
+            "Returns matching products from the catalog, recommended store category, "
+            "recent prices, and saved preferences. Use this FIRST when the user wants to buy something."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Product name or keyword, e.g. 'rice', 'basmati rice', 'toilet paper'",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "grocery_stores",
+        "description": "List all known stores grouped by category (Indian, Bulk, Regular, Produce, Online).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "description": "Optional category slug to filter: 'indian', 'bulk', 'regular', 'produce', 'online'",
+                },
+            },
+        },
+    },
+    {
+        "name": "grocery_price",
+        "description": (
+            "Record a price for a product at a store. Use when the user reports a price "
+            "(e.g. 'rice was $13 at New India Bazaar'). Builds up price history over time."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "product_name": {
+                    "type": "string",
+                    "description": "Product name, e.g. 'Basmati Rice'",
+                },
+                "store_name": {
+                    "type": "string",
+                    "description": "Store name, e.g. 'New India Bazaar'",
+                },
+                "price": {
+                    "type": "number",
+                    "description": "Price in dollars, e.g. 12.99",
+                },
+                "quantity": {
+                    "type": "string",
+                    "description": "What quantity this price is for, e.g. '10 lb bag', '24 pack'",
+                    "default": "",
+                },
+                "unit_price": {
+                    "type": "number",
+                    "description": "Optional price per unit for comparison, e.g. 1.30 per lb",
+                },
+            },
+            "required": ["product_name", "store_name", "price"],
+        },
+    },
+    {
+        "name": "grocery_preference",
+        "description": (
+            "Save a user preference for a product. Use when the user says things like "
+            "'I always get Daawat basmati from India Cash and Carry' or 'I prefer organic chicken'."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "product_name": {
+                    "type": "string",
+                    "description": "Product name, e.g. 'Basmati Rice'",
+                },
+                "preferred_store": {
+                    "type": "string",
+                    "description": "Preferred store name, e.g. 'India Cash and Carry'",
+                },
+                "preferred_brand": {
+                    "type": "string",
+                    "description": "Preferred brand, e.g. 'Daawat', 'Kirkland'",
+                    "default": "",
+                },
+                "notes": {
+                    "type": "string",
+                    "description": "Additional preference notes, e.g. 'organic only', 'get the 20lb bag'",
+                    "default": "",
+                },
+            },
+            "required": ["product_name"],
+        },
+    },
+    {
+        "name": "grocery_prices",
+        "description": (
+            "Look up price history for a product across all stores. "
+            "Use when user asks 'where is rice cheapest?' or 'what's the price of X?'."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "product_name": {
+                    "type": "string",
+                    "description": "Product name to look up prices for",
+                },
+            },
+            "required": ["product_name"],
         },
     },
     # --- Timers ---
