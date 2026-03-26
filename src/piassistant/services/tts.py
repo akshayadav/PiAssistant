@@ -5,6 +5,7 @@ import logging
 import os
 import shutil
 import tempfile
+import time
 
 import httpx
 
@@ -57,18 +58,33 @@ class TTSService(BaseService):
         if not text or not text.strip():
             raise ValueError("Empty text")
 
+        logger.info("[TTS] synthesize() called — %d chars", len(text))
+
         if self.kokoro_url:
+            logger.info("[TTS] Trying Kokoro at %s (voice=%s, speed=%s)...", self.kokoro_url, self.kokoro_voice, self.speed)
+            t0 = time.monotonic()
             try:
-                return await self._kokoro_synthesize(text)
+                result = await self._kokoro_synthesize(text)
+                elapsed = (time.monotonic() - t0) * 1000
+                logger.info("[TTS] Kokoro SUCCESS — %d bytes in %.0fms (Mac Mini)", len(result), elapsed)
+                return result
             except Exception as e:
-                logger.warning("Kokoro TTS failed, trying Piper fallback: %s", e)
+                elapsed = (time.monotonic() - t0) * 1000
+                logger.warning("[TTS] Kokoro FAILED in %.0fms: %s — trying Piper fallback", elapsed, e)
 
         if self._piper_available:
+            logger.info("[TTS] Trying Piper locally (model=%s)...", self.piper_model)
+            t0 = time.monotonic()
             try:
-                return await self._piper_synthesize(text)
+                result = await self._piper_synthesize(text)
+                elapsed = (time.monotonic() - t0) * 1000
+                logger.info("[TTS] Piper SUCCESS — %d bytes in %.0fms (Pi local)", len(result), elapsed)
+                return result
             except Exception as e:
-                logger.warning("Piper TTS failed: %s", e)
+                elapsed = (time.monotonic() - t0) * 1000
+                logger.warning("[TTS] Piper FAILED in %.0fms: %s", elapsed, e)
 
+        logger.error("[TTS] All backends failed — no TTS available")
         raise TTSUnavailableError("No TTS backend available")
 
     async def _kokoro_synthesize(self, text: str) -> bytes:
