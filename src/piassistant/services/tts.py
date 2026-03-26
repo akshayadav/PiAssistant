@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 import time
+from typing import AsyncGenerator
 
 import httpx
 
@@ -124,6 +125,57 @@ class TTSService(BaseService):
         finally:
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
+
+    async def synthesize_stream(self, text: str) -> AsyncGenerator[bytes, None]:
+        """Stream MP3 audio chunks from Kokoro. Falls back to full synthesis as single chunk."""
+        if not text or not text.strip():
+            raise ValueError("Empty text")
+
+        logger.info("[TTS] synthesize_stream() called — %d chars", len(text))
+
+        if self.kokoro_url:
+            logger.info("[TTS] Starting Kokoro stream at %s (voice=%s)...", self.kokoro_url, self.kokoro_voice)
+            t0 = time.monotonic()
+            try:
+                chunk_num = 0
+                total_bytes = 0
+                async for chunk in self._kokoro_synthesize_stream(text):
+                    chunk_num += 1
+                    total_bytes += len(chunk)
+                    elapsed = (time.monotonic() - t0) * 1000
+                    if chunk_num == 1:
+                        logger.info("[TTS] Stream first chunk: %d bytes at %.0fms (Mac Mini)", len(chunk), elapsed)
+                    yield chunk
+                elapsed = (time.monotonic() - t0) * 1000
+                logger.info("[TTS] Stream complete: %d chunks, %d total bytes in %.0fms (Mac Mini)", chunk_num, total_bytes, elapsed)
+                return
+            except Exception as e:
+                elapsed = (time.monotonic() - t0) * 1000
+                logger.warning("[TTS] Kokoro stream FAILED at %.0fms: %s — falling back to full synthesis", elapsed, e)
+
+        # Fallback: generate full audio, yield as single chunk
+        logger.info("[TTS] Falling back to non-streaming synthesis")
+        audio = await self.synthesize(text)
+        yield audio
+
+    async def _kokoro_synthesize_stream(self, text: str) -> AsyncGenerator[bytes, None]:
+        """Stream MP3 from Kokoro-FastAPI with stream=true."""
+        async with httpx.AsyncClient(timeout=60) as client:
+            async with client.stream(
+                "POST",
+                f"{self.kokoro_url}/v1/audio/speech",
+                json={
+                    "model": "kokoro",
+                    "input": text,
+                    "voice": self.kokoro_voice,
+                    "speed": self.speed,
+                    "response_format": "mp3",
+                    "stream": True,
+                },
+            ) as resp:
+                resp.raise_for_status()
+                async for chunk in resp.aiter_bytes(chunk_size=4096):
+                    yield chunk
 
     async def health_check(self) -> dict:
         backends = []
