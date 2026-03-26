@@ -205,6 +205,7 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 3. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
 
 ### Future
+- Mac Mini monitor app — dashboard/CLI to monitor, log, and manage all Mac Mini services (Kokoro TTS, future Ollama, etc.)
 - Local LLM fallback (Ollama on Mac Mini)
 - AI camera hat integration
 - Motors/servos for arms/wheels
