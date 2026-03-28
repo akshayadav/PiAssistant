@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from ..config import Settings
 from ..services.base import ServiceRegistry
-from ..services.llm import LLMService
+from ..services.llm import LLMService, LLMResponse, ToolUseBlock, TextBlock
 from ..services.weather import WeatherService
 from ..services.news import NewsService
 from ..services.grocery import GroceryService
@@ -104,10 +104,10 @@ class Agent:
             f"Default location: {self.settings.default_location}"
         )
 
-    async def _execute_tools(self, response) -> list[dict]:
+    async def _execute_tools(self, response: LLMResponse) -> list[dict]:
         results = []
         for block in response.content:
-            if block.type == "tool_use":
+            if isinstance(block, ToolUseBlock):
                 try:
                     result = await self._dispatch_tool(block.name, block.input)
                     content = json.dumps(result)
@@ -336,10 +336,10 @@ class Agent:
         else:
             return {"error": f"Unknown tool: {name}"}
 
-    def _extract_text(self, response) -> str:
+    def _extract_text(self, response: LLMResponse) -> str:
         parts = []
         for block in response.content:
-            if block.type == "text":
+            if isinstance(block, TextBlock):
                 parts.append(block.text)
         return "\n".join(parts) if parts else "I'm not sure how to respond to that."
 

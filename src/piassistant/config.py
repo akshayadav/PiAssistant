@@ -2,9 +2,16 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # Claude API
+    # LLM backend: "anthropic" or "local"
+    llm_backend: str = "local"
+
+    # Claude API (used when llm_backend = "anthropic")
     anthropic_api_key: str = ""
     claude_model: str = "claude-sonnet-4-6"
+
+    # Local LLM via LM Studio (used when llm_backend = "local")
+    lmstudio_url: str = "http://10.0.0.232:1234"
+    lmstudio_model: str = "google/gemma-3-12b"
 
     # Weather (Open-Meteo — no API key needed)
     default_location: str = "Idaho Falls, ID"

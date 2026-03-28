@@ -6,7 +6,7 @@ from piassistant.brain.tools import TOOL_DEFINITIONS
 from piassistant.config import Settings
 from piassistant.services.base import ServiceRegistry
 from piassistant.services.cache import CacheService
-from piassistant.services.llm import LLMService
+from piassistant.services.llm import LLMService, LLMResponse, TextBlock, ToolUseBlock
 
 
 @pytest.fixture
@@ -26,27 +26,16 @@ def registry(settings):
 
 
 def make_text_response(text: str):
-    """Create a mock Claude response with text content."""
-    block = MagicMock()
-    block.type = "text"
-    block.text = text
-    response = MagicMock()
-    response.content = [block]
-    response.stop_reason = "end_turn"
-    return response
+    """Create a mock response with text content."""
+    return LLMResponse(content=[TextBlock(text=text)], stop_reason="end_turn")
 
 
 def make_tool_use_response(tool_name: str, tool_input: dict, tool_id: str = "tool_123"):
-    """Create a mock Claude response with tool_use."""
-    block = MagicMock()
-    block.type = "tool_use"
-    block.name = tool_name
-    block.input = tool_input
-    block.id = tool_id
-    response = MagicMock()
-    response.content = [block]
-    response.stop_reason = "tool_use"
-    return response
+    """Create a mock response with tool_use."""
+    return LLMResponse(
+        content=[ToolUseBlock(id=tool_id, name=tool_name, input=tool_input)],
+        stop_reason="tool_use",
+    )
 
 
 class TestAgent:
