@@ -76,7 +76,7 @@ class LLMService(BaseService):
         else:
             self.base_url = settings.lmstudio_url.rstrip("/")
             self.model = settings.lmstudio_model
-            self._http = httpx.AsyncClient(base_url=self.base_url, timeout=120.0)
+            self._http = httpx.AsyncClient(base_url=self.base_url, timeout=300.0)
 
     async def chat(
         self,
