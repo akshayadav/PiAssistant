@@ -146,10 +146,24 @@ Keyword-based tool filtering: scan the user's message and only include relevant 
 - Reduces tool payload from 32 → 2-10 per request
 - Fallback: all tools if no keywords match
 
+## Multi-Model Strategy
+
+LM Studio can load multiple models simultaneously. Current setup:
+
+| Model | Role | RAM | Status |
+|---|---|---|---|
+| **Qwen 3 8B** (MLX 4-bit) | Chat brain — tool use | ~5GB | Active (`LMSTUDIO_MODEL`) |
+| **Gemma 3 12B** (MLX QAT 4-bit) | Future vision (multimodal) | ~7.5GB | Loaded, reserved |
+
+Both loaded uses ~12.5GB of 16GB — leaves ~3.5GB for macOS, acceptable for a headless server.
+
+**Why keep Gemma loaded**: Gemma 3 is multimodal (vision + text). When the AI camera hat is added, the Pi can send images to Gemma for object detection, scene description, etc. without any external API. A future `VisionService` would target `google/gemma-3-12b` directly while the chat brain continues using Qwen.
+
 ## Future Considerations
 
+- **Camera + Gemma vision**: Pi captures image → sends to Gemma 3 12B on Mac Mini → "what do you see?" — fully local vision pipeline.
 - **Jetson Orin Nano**: When available, can serve as a second local LLM backend. Same `LLMService` abstraction works — just change URL.
-- **Model hot-swap**: LM Studio can load different models. Could auto-select model based on query complexity (small model for simple tool picks, large model for multi-step chains).
+- **Model hot-swap**: Could auto-select model based on query type (Qwen for tools, Gemma for vision).
 - **Claude API as premium tier**: Keep `LLM_BACKEND=anthropic` option for when highest quality is needed (e.g., complex multi-tool daily briefs).
 - **Ollama alternative**: Same OpenAI-compatible API. Could run alongside or instead of LM Studio.
 
@@ -160,5 +174,6 @@ Keyword-based tool filtering: scan the user's message and only include relevant 
 | Mac Mini IP | 10.0.0.232 |
 | LM Studio port | 1234 |
 | API endpoint | http://10.0.0.232:1234/v1/chat/completions |
-| Current model | google/gemma-3-12b (MLX, QAT 4-bit) |
+| Chat model | qwen3-8b (MLX, 4-bit) |
+| Vision model | google/gemma-3-12b (MLX, QAT 4-bit) — reserved for future camera |
 | Pi → Mac Mini latency | <1ms (same LAN) |
