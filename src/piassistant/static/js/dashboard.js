@@ -89,30 +89,71 @@ function removeThinking() {
   if (el) el.remove();
 }
 
+// === Image Upload ===
+let pendingImage = null;  // {data: base64, mime: string, name: string}
+
+function handleImageSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;  // "data:image/jpeg;base64,..."
+    const [header, b64] = dataUrl.split(",");
+    const mime = header.match(/data:(.*?);/)[1];
+    pendingImage = { data: b64, mime, name: file.name };
+    // Show preview
+    document.getElementById("image-preview-img").src = dataUrl;
+    document.getElementById("image-preview").style.display = "flex";
+    document.getElementById("img-btn").style.color = "var(--accent)";
+    inputEl.placeholder = "Ask about this image...";
+    inputEl.focus();
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImageUpload() {
+  pendingImage = null;
+  document.getElementById("image-preview").style.display = "none";
+  document.getElementById("image-input").value = "";
+  document.getElementById("img-btn").style.color = "";
+  inputEl.placeholder = "Ask me anything...";
+}
+
 async function sendMessage() {
   const text = inputEl.value.trim();
-  if (!text || sending) return;
+  if (!text && !pendingImage) return;
+  if (sending) return;
 
   sending = true;
   sendBtn.disabled = true;
   inputEl.value = "";
   inputEl.style.height = "auto";
 
-  addMessage(text, "user");
+  // Show user message with image thumbnail if present
+  const displayText = pendingImage
+    ? `📷 ${pendingImage.name}${text ? "\n" + text : ""}`
+    : text;
+  addMessage(displayText, "user");
   addThinking();
 
   try {
+    const payload = { message: text || "What do you see in this image?" };
+    if (pendingImage) {
+      payload.image = pendingImage.data;
+      payload.image_mime = pendingImage.mime;
+    }
+    clearImageUpload();
+
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify(payload),
     });
     removeThinking();
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     addMessage(data.response, "bot");
     if (voiceResponseEnabled) speakText(data.response);
-    // Refresh widgets after chat (user may have added items)
     refreshAll();
   } catch (err) {
     removeThinking();

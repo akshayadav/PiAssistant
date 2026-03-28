@@ -248,6 +248,49 @@ class LLMService(BaseService):
 
         return {"role": role, "content": str(content)}
 
+    async def vision(
+        self,
+        image_b64: str,
+        prompt: str = "Describe what you see in this image.",
+        mime_type: str = "image/jpeg",
+        max_tokens: int = 512,
+    ) -> str:
+        """Analyze an image using the vision model (Gemma 3 12B).
+
+        Always uses the local LM Studio backend regardless of llm_backend setting,
+        since vision requires a multimodal model.
+        """
+        vision_model = self.settings.lmstudio_vision_model
+        data_url = f"data:{mime_type};base64,{image_b64}"
+
+        # Use the local HTTP client if available, otherwise create one
+        if hasattr(self, "_http"):
+            client = self._http
+        else:
+            client = httpx.AsyncClient(
+                base_url=self.settings.lmstudio_url.rstrip("/"), timeout=300.0,
+            )
+
+        try:
+            resp = await client.post("/v1/chat/completions", json={
+                "model": vision_model,
+                "messages": [{
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": data_url}},
+                    ],
+                }],
+                "max_tokens": max_tokens,
+                "temperature": 0.7,
+            })
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"]
+        finally:
+            if not hasattr(self, "_http"):
+                await client.aclose()
+
     async def health_check(self) -> dict:
         if self.backend == "anthropic":
             if not self.client.api_key:

@@ -659,6 +659,25 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
 #send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 #send-btn:hover:not(:disabled) { filter: brightness(1.1); }
 
+#img-btn {
+  padding: 8px 12px;
+  background: var(--surface2);
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+#img-btn:hover { color: var(--text); }
+
+#image-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px;
+  background: var(--surface);
+}
+
 /* Timer alert overlay */
 #timer-alert {
   display: none;

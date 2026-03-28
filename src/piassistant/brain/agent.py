@@ -61,6 +61,20 @@ class Agent:
 
             return self._extract_text(response)
 
+    async def process_vision(
+        self, user_message: str, image_b64: str, mime_type: str = "image/jpeg",
+    ) -> str:
+        """Analyze an image using the vision model, then return the response."""
+        prompt = user_message or "Describe what you see in this image in detail."
+        description = await self.llm.vision(
+            image_b64=image_b64, prompt=prompt, mime_type=mime_type,
+        )
+        # Add to conversation history so follow-up questions have context
+        self.conversation.append({"role": "user", "content": f"[User sent an image] {user_message}"})
+        self.conversation.append({"role": "assistant", "content": description})
+        self._trim_history()
+        return description
+
     def reset(self) -> None:
         """Clear conversation history."""
         self.conversation.clear()

@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     # Local LLM via LM Studio (used when llm_backend = "local")
     lmstudio_url: str = "http://10.0.0.232:1234"
     lmstudio_model: str = "google/gemma-3-12b"
+    lmstudio_vision_model: str = "google/gemma-3-12b"  # Multimodal model for image analysis
 
     # Weather (Open-Meteo — no API key needed)
     default_location: str = "Idaho Falls, ID"
