@@ -226,6 +226,7 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Human-like TTS — Kokoro TTS on Mac Mini (primary) + Piper TTS on Pi (fallback) + browser TTS (last resort). TTSService, `/api/voice/speak` endpoint, `speakText()` JS utility, 98 tests passing
 - [x] Local LLM — Gemma 3 12B on Mac Mini via LM Studio, dual backend (local/anthropic), unified LLMResponse format, tool filtering for performance, 100 tests passing
 - [x] Tool filtering — keyword-based tool selection reduces 32 tools to 2-10 per request for local LLM speed
+- [x] Image upload + vision — dashboard camera button, image preview, Gemma 3 12B multimodal analysis on Mac Mini, 100 tests passing
 
 ### Up Next (in priority order)
 1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
