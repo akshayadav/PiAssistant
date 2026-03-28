@@ -560,3 +560,134 @@ TOOL_DEFINITIONS = [
         },
     },
 ]
+
+
+# ---------------------------------------------------------------------------
+# Tool Filtering — keyword-based tool selection for local LLM performance
+# ---------------------------------------------------------------------------
+
+# Map tool names to their group
+TOOL_GROUPS: dict[str, list[str]] = {
+    "weather": ["get_current_weather", "get_weather_forecast"],
+    "news": ["get_news_headlines", "search_news"],
+    "orders": ["get_orders", "refresh_orders"],
+    "grocery": [
+        "grocery_add", "grocery_list", "grocery_remove", "grocery_clear",
+        "grocery_find", "grocery_stores", "grocery_price", "grocery_preference",
+        "grocery_prices",
+    ],
+    "timers": ["timer_set", "timer_list", "timer_cancel"],
+    "tasks": [
+        "task_add", "task_list", "task_complete",
+        "task_delete", "task_update", "task_suggest",
+    ],
+    "notes": ["note_add", "note_list"],
+    "calendar": ["get_calendar_events", "add_calendar_event"],
+    "network": ["list_network_devices", "add_network_device"],
+    "system": ["get_system_status"],
+    "quote": ["get_daily_quote"],
+}
+
+# Keywords that trigger each tool group
+GROUP_KEYWORDS: dict[str, list[str]] = {
+    "weather": [
+        "weather", "temperature", "forecast", "rain", "snow", "sunny",
+        "cloudy", "hot", "cold", "humid", "wind", "outside",
+    ],
+    "news": [
+        "news", "headlines", "article", "happening", "current events",
+        "breaking", "top stories",
+    ],
+    "orders": [
+        "order", "amazon", "delivery", "package", "tracking", "shipped",
+    ],
+    "grocery": [
+        "grocery", "groceries", "shopping", "buy", "store", "price",
+        "costco", "safeway", "target", "sprouts", "whole foods",
+        "india bazaar", "apna mandi", "india cash", "lucky",
+        "shopping list", "add to list",
+    ],
+    "timers": [
+        "timer", "alarm", "countdown", "minutes timer", "set timer",
+        "how long", "cooking timer",
+    ],
+    "tasks": [
+        "task", "todo", "to-do", "to do", "remind", "reminder",
+        "schedule", "priority", "overdue", "stale", "due date",
+        "prioritize", "what should i do",
+    ],
+    "notes": [
+        "note", "remember that", "save that", "jot down", "write down",
+    ],
+    "calendar": [
+        "calendar", "event", "meeting", "schedule", "appointment",
+        "busy", "free time", "what do i have",
+    ],
+    "network": [
+        "network", "device", "ping", "online", "offline", "connected",
+        "pico", "mac mini",
+    ],
+    "system": [
+        "system", "cpu", "memory", "ram", "disk", "uptime",
+        "system status", "how is the pi", "pi health",
+    ],
+    "quote": [
+        "quote", "inspiration", "motivation", "motivate", "inspire",
+        "daily quote", "words of wisdom",
+    ],
+}
+
+# Compound triggers — multi-group requests
+COMPOUND_KEYWORDS: dict[str, list[str]] = {
+    "daily brief": ["weather", "tasks", "calendar", "grocery"],
+    "summary": ["weather", "tasks", "calendar", "grocery"],
+    "good morning": ["weather", "tasks", "calendar", "quote"],
+    "brief": ["weather", "tasks", "calendar"],
+}
+
+# Build a lookup from tool name to definition for fast filtering
+_TOOL_BY_NAME: dict[str, dict] = {t["name"]: t for t in TOOL_DEFINITIONS}
+
+
+def filter_tools(user_message: str) -> list[dict]:
+    """Select relevant tool definitions based on the user's message.
+
+    Returns a subset of TOOL_DEFINITIONS matching keyword groups found in the
+    message. If no keywords match, returns all tools (fallback for ambiguous
+    or general-knowledge requests).
+    """
+    msg_lower = user_message.lower()
+
+    matched_groups: set[str] = set()
+
+    # Check compound keywords first (multi-group triggers)
+    for keyword, groups in COMPOUND_KEYWORDS.items():
+        if keyword in msg_lower:
+            matched_groups.update(groups)
+
+    # Check individual group keywords
+    for group, keywords in GROUP_KEYWORDS.items():
+        for kw in keywords:
+            if kw in msg_lower:
+                matched_groups.add(group)
+                break
+
+    # No matches → general question, no tools needed (let model answer directly)
+    # OR ambiguous → send all tools
+    if not matched_groups:
+        # Heuristic: if it looks like a question/command that might need tools,
+        # send all tools. If it's conversational, send none.
+        action_hints = [
+            "what", "how", "check", "show", "list", "get", "set", "add",
+            "remove", "delete", "create", "tell me", "give me",
+        ]
+        if any(hint in msg_lower for hint in action_hints):
+            return TOOL_DEFINITIONS
+        return []  # Pure conversation — no tools needed
+
+    # Collect tool definitions for matched groups
+    tool_names: set[str] = set()
+    for group in matched_groups:
+        tool_names.update(TOOL_GROUPS.get(group, []))
+
+    return [_TOOL_BY_NAME[name] for name in tool_names if name in _TOOL_BY_NAME]

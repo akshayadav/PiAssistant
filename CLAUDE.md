@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**PiAssistant** is a smart assistant running on a Raspberry Pi 5 that acts as a **mothership** — it orchestrates Pico W microcontrollers, handles user interaction (CLI, voice, web), and offloads heavy processing to a Mac Mini on the local network. Claude API is the brain, using tool use to route natural language requests to services.
+**PiAssistant** is a smart assistant running on a Raspberry Pi 5 that acts as a **mothership** — it orchestrates Pico W microcontrollers, handles user interaction (CLI, voice, web), and offloads heavy processing to a Mac Mini on the local network. A local LLM (Gemma 3 12B via LM Studio on Mac Mini) is the default brain, with Claude API as an optional premium backend. The brain uses tool use to route natural language requests to 32 services.
 
 ### How PiAssistant Differs from Sibling Projects
 
@@ -45,6 +45,26 @@ When migrating from Pi 5 to Jetson Orin Nano:
 
 The service abstraction makes this a config/deployment change, not a rewrite. Mac Mini becomes optional on Jetson Orin.
 
+### Decision: Local LLM on Mac Mini
+
+Switched from Claude API (paid per token) to a local LLM running on the Mac Mini M4 (16GB) via LM Studio.
+
+| Factor | Claude API | Local LLM (Mac Mini) |
+|---|---|---|
+| Cost | ~$3-10/month (variable) | Free |
+| Quality | Best (tool use, multi-step) | Good (single tool picks) |
+| Speed | ~1-3s round trip | ~2-5s (depends on model) |
+| Offline | No | Yes (LAN only) |
+| Privacy | Data sent to Anthropic | All local |
+
+**Model**: Gemma 3 12B QAT 4-bit (MLX format). MLX chosen over GGUF for native Apple Silicon optimization (~50-70 tok/s vs ~30-40 tok/s on M4).
+
+**Dual backend**: `LLM_BACKEND=local` (default) uses LM Studio's OpenAI-compatible API at `http://10.0.0.232:1234`. `LLM_BACKEND=anthropic` uses Claude API. Switching is a one-line `.env` change.
+
+**Tool filtering**: Local LLMs struggle with 32 tool definitions (~3-4K tokens). Keyword-based filtering in `brain/tools.py` selects only relevant tool groups per request (2-10 tools instead of 32), improving speed ~2-3x.
+
+See [docs/local-llm-plan.md](docs/local-llm-plan.md) for full decision rationale, model comparisons, and implementation details.
+
 ### Decision: Pi 5 Setup
 
 | Decision | Choice | Rationale |
@@ -63,7 +83,7 @@ The service abstraction makes this a config/deployment change, not a rewrite. Ma
 | Decision | Choice | Rationale |
 |---|---|---|
 | Architecture | Hybrid: Pi as hub, Mac Mini as backend | Pi orchestrates + hardware, Mac Mini does heavy lifting |
-| LLM | Claude API only (for now) | Start simple, add local LLM fallback later |
+| LLM | Local LLM default (Gemma 3 12B on Mac Mini), Claude API optional | Free local inference; Claude API for premium quality when needed |
 | Stack | Python + FastAPI | Best for Pi/Jetson hardware, async, matches MicroPython on Picos |
 | Interfaces | Terminal (full), Voice (common), Web UI | Terminal first; voice + web deferred |
 | Data sources | Free APIs (Open-Meteo, NewsAPI) | Open-Meteo needs no key; web scraping added later |
@@ -108,8 +128,8 @@ PiAssistant/
 │       │   ├── calendar.py   # Calendar events (Google + iCloud CalDAV)
 │       │   └── tts.py        # Text-to-speech (Kokoro on Mac Mini + Piper on Pi)
 │       ├── brain/
-│       │   ├── agent.py      # Tool-use loop: user msg → Claude → tools → response
-│       │   └── tools.py      # Tool definitions for Claude (30 tools)
+│       │   ├── agent.py      # Tool-use loop: user msg → LLM → tools → response
+│       │   └── tools.py      # 32 tool definitions + keyword-based tool filtering
 │       ├── api/
 │       │   ├── app.py        # FastAPI app factory
 │       │   ├── middleware.py        # API key auth middleware (Bearer token on write endpoints)
@@ -135,15 +155,21 @@ PiAssistant/
 
 Every capability is a `BaseService` with `async initialize()`, `async health_check()`, and a `name` property. Services are registered explicitly in `main.py` via `ServiceRegistry` (dict-based, no autodiscovery). The registry is injected into FastAPI app and brain agent.
 
-Adding a new capability = add service + add Claude tool definition + add dispatch case.
+Adding a new capability = add service + add tool definition + add dispatch case.
 
-### Brain: Claude Tool Use Loop
+### Brain: LLM Tool Use Loop
 
-Unlike PiBot (plain chat), PiAssistant uses Claude's **tool use** for agentic routing:
-1. User says something natural → send to Claude with tool definitions
-2. If Claude returns `tool_use` → execute tools via service registry
-3. Send tool results back → Claude synthesizes natural language response
-4. Repeat until Claude returns `end_turn`
+Unlike PiBot (plain chat), PiAssistant uses **tool use** for agentic routing:
+1. User says something natural → send to LLM with tool definitions
+2. If LLM returns `tool_use` → execute tools via service registry
+3. Send tool results back → LLM synthesizes natural language response
+4. Repeat until LLM returns `end_turn`
+
+The LLM backend is swappable: local (LM Studio on Mac Mini) or Anthropic (Claude API). Both return a unified `LLMResponse` format so the Agent doesn't know which backend is active.
+
+### Tool Filtering (Local LLM Optimization)
+
+When using the local LLM backend, `filter_tools()` in `brain/tools.py` selects only relevant tools based on keywords in the user's message. This reduces the tool payload from 32 (~3.5K tokens) to 2-10, significantly improving local LLM speed and accuracy. The Anthropic backend receives all 32 tools since Claude handles large tool sets well.
 
 ### Cache-First Data Gateway (Mothership Pattern)
 
@@ -198,6 +224,8 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Task Auto-Do — Claude evaluates each new task against available tools; if it can fulfill the task (weather, calendar, orders, etc.), it does it immediately and marks complete
 - [x] Voice Input — Web Speech API mic button on dashboard, speech-to-text auto-sends to chat, works in Chromium kiosk
 - [x] Human-like TTS — Kokoro TTS on Mac Mini (primary) + Piper TTS on Pi (fallback) + browser TTS (last resort). TTSService, `/api/voice/speak` endpoint, `speakText()` JS utility, 98 tests passing
+- [x] Local LLM — Gemma 3 12B on Mac Mini via LM Studio, dual backend (local/anthropic), unified LLMResponse format, tool filtering for performance, 100 tests passing
+- [x] Tool filtering — keyword-based tool selection reduces 32 tools to 2-10 per request for local LLM speed
 
 ### Up Next (in priority order)
 1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
@@ -205,11 +233,11 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 3. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
 
 ### Future
-- Mac Mini monitor app — dashboard/CLI to monitor, log, and manage all Mac Mini services (Kokoro TTS, future Ollama, etc.)
-- Local LLM fallback (Ollama on Mac Mini)
+- Mac Mini monitor app — dashboard/CLI to monitor, log, and manage all Mac Mini services (Kokoro TTS, LM Studio, etc.)
+- Upgrade local LLM model — Qwen 3 8B MLX or Qwen3.5-35B-A3B MoE for better speed/quality
 - AI camera hat integration
 - Motors/servos for arms/wheels
-- Jetson Nano/Orin migration
+- Jetson Nano/Orin migration (can serve as second local LLM backend)
 - Web scraping as alternative data source
 
 ## Build & Run Commands
@@ -337,7 +365,7 @@ Terminal section is hidden when not configured. WebSocket auth uses `?token=` qu
 | Voice STT | Add `STTService` → brain receives text from STT instead of HTTP (TTS already implemented) |
 | Web UI | FastAPI serves JSON → add frontend that calls `/api/chat` |
 | MQTT push | Hook into cache updates → publish to MQTT topics on refresh |
-| Mac Mini offload | Change service backends (LLM, STT) to call Mac Mini HTTP endpoints |
-| Local LLM fallback | New `LocalLLMService` with same interface, swap via config |
-| Jetson migration | Service abstraction = same code, different deployment |
-| Hardware (camera, servos) | New services + new Claude tool definitions, same pattern |
+| Mac Mini offload | Already done for LLM + TTS; add more services as needed |
+| Better local model | Change `LMSTUDIO_MODEL` in `.env` — Qwen 3 8B MLX or Qwen3.5-35B-A3B MoE recommended |
+| Jetson as LLM backend | Same OpenAI-compatible API — change `LMSTUDIO_URL` to point at Jetson |
+| Hardware (camera, servos) | New services + new tool definitions, same pattern |

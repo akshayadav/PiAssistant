@@ -17,7 +17,7 @@ from ..services.quote import QuoteService
 from ..services.sysmon import SystemMonitorService
 from ..services.network import NetworkService
 from ..services.calendar import CalendarService
-from .tools import TOOL_DEFINITIONS
+from .tools import TOOL_DEFINITIONS, filter_tools
 
 
 class Agent:
@@ -35,11 +35,18 @@ class Agent:
         self.conversation.append({"role": "user", "content": user_message})
         self._trim_history()
 
+        # For local LLM, filter tools to reduce context and improve speed.
+        # Anthropic backend gets all tools (Claude handles large tool sets well).
+        if self.llm.backend == "local":
+            tools = filter_tools(user_message) or None
+        else:
+            tools = TOOL_DEFINITIONS
+
         while True:
             response = await self.llm.chat(
                 messages=self.conversation,
                 system=self._system_prompt(),
-                tools=TOOL_DEFINITIONS,
+                tools=tools,
             )
 
             self.conversation.append({"role": "assistant", "content": response.content})

@@ -42,6 +42,7 @@ class TestAgent:
     @pytest.mark.asyncio
     async def test_simple_text_response(self, settings, registry):
         llm = MagicMock(spec=LLMService)
+        llm.backend = "anthropic"
         llm.chat = AsyncMock(return_value=make_text_response("Hello there!"))
 
         agent = Agent(llm, registry, settings)
@@ -52,6 +53,7 @@ class TestAgent:
     @pytest.mark.asyncio
     async def test_reset_clears_history(self, settings, registry):
         llm = MagicMock(spec=LLMService)
+        llm.backend = "anthropic"
         llm.chat = AsyncMock(return_value=make_text_response("Hi"))
 
         agent = Agent(llm, registry, settings)
@@ -66,3 +68,53 @@ class TestAgent:
             assert "description" in tool
             assert "input_schema" in tool
             assert tool["input_schema"]["type"] == "object"
+
+
+class TestToolFiltering:
+    def test_weather_keywords_return_weather_tools(self):
+        from piassistant.brain.tools import filter_tools
+        tools = filter_tools("What's the weather like?")
+        names = {t["name"] for t in tools}
+        assert "get_current_weather" in names
+        assert "get_weather_forecast" in names
+        assert len(tools) == 2
+
+    def test_grocery_keywords_return_grocery_tools(self):
+        from piassistant.brain.tools import filter_tools
+        tools = filter_tools("Add milk to the grocery list")
+        names = {t["name"] for t in tools}
+        assert "grocery_add" in names
+        assert "grocery_list" in names
+        assert len(tools) <= 10  # grocery group has 9 tools
+
+    def test_timer_keywords_return_timer_tools(self):
+        from piassistant.brain.tools import filter_tools
+        tools = filter_tools("Set a timer for 10 minutes")
+        names = {t["name"] for t in tools}
+        assert "timer_set" in names
+        assert len(tools) == 3
+
+    def test_no_keywords_conversational_returns_empty(self):
+        from piassistant.brain.tools import filter_tools
+        tools = filter_tools("Thanks, that sounds great!")
+        assert tools == []
+
+    def test_no_keywords_action_returns_all(self):
+        from piassistant.brain.tools import filter_tools
+        tools = filter_tools("What can you do for me?")
+        assert len(tools) == len(TOOL_DEFINITIONS)
+
+    def test_compound_daily_brief(self):
+        from piassistant.brain.tools import filter_tools
+        tools = filter_tools("Give me a daily brief")
+        names = {t["name"] for t in tools}
+        assert "get_current_weather" in names
+        assert "task_list" in names
+        assert "get_calendar_events" in names
+
+    def test_multiple_groups_combined(self):
+        from piassistant.brain.tools import filter_tools
+        tools = filter_tools("Check the weather and set a timer")
+        names = {t["name"] for t in tools}
+        assert "get_current_weather" in names
+        assert "timer_set" in names
