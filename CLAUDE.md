@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**PiAssistant** is a smart assistant running on a Raspberry Pi 5 that acts as a **mothership** — it orchestrates Pico W microcontrollers, handles user interaction (CLI, voice, web), and offloads heavy processing to a Mac Mini on the local network. A local LLM (Gemma 3 12B via LM Studio on Mac Mini) is the default brain, with Claude API as an optional premium backend. The brain uses tool use to route natural language requests to 32 services.
+**PiAssistant** is a smart assistant running on a Raspberry Pi 5 that acts as a **mothership** — it orchestrates Pico W microcontrollers, handles user interaction (CLI, voice, web), and offloads heavy processing to a Mac Mini on the local network. A local LLM (Qwen 3 8B via LM Studio on Mac Mini) is the default brain, with Claude API as an optional premium backend. Gemma 3 12B handles image/vision analysis. The brain uses tool use to route natural language requests to 32 services.
 
 ### How PiAssistant Differs from Sibling Projects
 
@@ -57,11 +57,16 @@ Switched from Claude API (paid per token) to a local LLM running on the Mac Mini
 | Offline | No | Yes (LAN only) |
 | Privacy | Data sent to Anthropic | All local |
 
-**Model**: Gemma 3 12B QAT 4-bit (MLX format). MLX chosen over GGUF for native Apple Silicon optimization (~50-70 tok/s vs ~30-40 tok/s on M4).
+**Chat model**: Qwen 3 8B 4-bit (MLX format) — fast tool use, best balance of speed and accuracy.
+**Vision model**: Gemma 3 12B QAT 4-bit (MLX format) — multimodal, handles image analysis.
+Both loaded in LM Studio simultaneously (~12.5GB total, fine for 16GB Mac Mini).
+MLX chosen over GGUF for native Apple Silicon optimization (~50-70 tok/s vs ~30-40 tok/s on M4).
 
 **Dual backend**: `LLM_BACKEND=local` (default) uses LM Studio's OpenAI-compatible API at `http://10.0.0.232:1234`. `LLM_BACKEND=anthropic` uses Claude API. Switching is a one-line `.env` change.
 
 **Tool filtering**: Local LLMs struggle with 32 tool definitions (~3-4K tokens). Keyword-based filtering in `brain/tools.py` selects only relevant tool groups per request (2-10 tools instead of 32), improving speed ~2-3x.
+
+**Image upload + vision**: Dashboard has a camera button to upload images. Vision requests bypass the chat model and route directly to Gemma 3 12B (`lmstudio_vision_model` setting) for multimodal analysis.
 
 See [docs/local-llm-plan.md](docs/local-llm-plan.md) for full decision rationale, model comparisons, and implementation details.
 

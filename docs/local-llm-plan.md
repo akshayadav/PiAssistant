@@ -64,16 +64,28 @@ The Agent doesn't know or care which backend is active.
 | Gemma 3 12B QAT 4bit | 12B | 12B | ~7.5GB | ~25-35 tok/s | Good |
 | Qwen3.5-35B-A3B (MoE) | 35B | 3B | ~3-5GB | ~70-90 tok/s | Very good |
 
-### Current Model: Gemma 3 12B (QAT 4-bit, MLX)
+### Current Models
 
-**Why**: Already downloaded, confirmed working with tool calling via LM Studio. QAT (quantization-aware training) means better quality than post-hoc quantization.
+**Chat brain: Qwen 3 8B (MLX 4-bit)** — deployed 2026-03-27 after benchmarking against Gemma 3 12B. Faster on tool-calling queries (5x on weather), handles large tool sets without errors.
 
-**Limitation**: Slower than smaller models due to 12B size. ~25-35 tok/s on M4.
+**Vision: Gemma 3 12B (QAT 4-bit, MLX)** — multimodal model for image analysis. QAT (quantization-aware training) means better quality than post-hoc quantization.
 
-### Recommended Upgrade Path
+### Benchmark Results (2026-03-27)
 
-1. **Qwen 3 8B MLX** — best balance of speed and tool-use quality
-2. **Qwen3.5-35B-A3B** — if full GGUF/MLX can be downloaded, fastest smart option (only 3B active per token)
+| Test | Qwen 3 8B | Gemma 3 12B | Winner |
+|---|---|---|---|
+| Weather (2 tools) | **8.7s** | 45.5s | Qwen (5.2x) |
+| Grocery (9 tools) | **13.2s** | 20.4s | Qwen (1.5x) |
+| Timer (3 tools) | 13.1s | **8.8s** | Gemma (1.5x) |
+| Conversational (0 tools) | 9.3s | **1.5s** | Gemma (6.2x) |
+| General knowledge (32 tools) | 26.8s | error (400) | Qwen |
+
+Qwen wins for tool use (primary use case). Gemma wins for simple text but chokes on large tool sets.
+
+### Future Upgrade Path
+
+1. **Qwen3.5-35B-A3B** — if full MLX can be downloaded, fastest smart option (only 3B active per token)
+2. Disable Qwen 3 thinking mode for faster conversational responses
 
 ### Format: MLX over GGUF
 
@@ -145,6 +157,19 @@ Keyword-based tool filtering: scan the user's message and only include relevant 
 - Keyword-based tool group selection
 - Reduces tool payload from 32 → 2-10 per request
 - Fallback: all tools if no keywords match
+
+### 2026-03-27: Model Switch to Qwen 3 8B
+- Benchmarked Qwen 3 8B vs Gemma 3 12B (see results above)
+- Qwen wins for tool use, Gemma wins for conversational
+- Switched chat brain to Qwen 3 8B, kept Gemma for vision
+- Both models loaded in LM Studio simultaneously
+
+### 2026-03-27: Image Upload + Vision
+- Dashboard camera button for image upload with preview
+- `/api/chat` accepts optional `image` (base64) and `image_mime` fields
+- Vision requests route to Gemma 3 12B (`lmstudio_vision_model`) regardless of `llm_backend` setting
+- `LLMService.vision()` method for direct multimodal inference
+- Conversation history records vision interactions for follow-up context
 
 ## Multi-Model Strategy
 

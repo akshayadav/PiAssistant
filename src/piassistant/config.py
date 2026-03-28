@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     # Local LLM via LM Studio (used when llm_backend = "local")
     lmstudio_url: str = "http://10.0.0.232:1234"
-    lmstudio_model: str = "google/gemma-3-12b"
+    lmstudio_model: str = "qwen3-8b"                    # Chat brain (tool use)
     lmstudio_vision_model: str = "google/gemma-3-12b"  # Multimodal model for image analysis
 
     # Weather (Open-Meteo — no API key needed)
