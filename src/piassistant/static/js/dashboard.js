@@ -322,6 +322,21 @@ async function fetchCalendar() {
 
 // === Weather Widget ===
 
+let tempUnit = localStorage.getItem("tempUnit") || "F";
+
+function toggleTempUnit() {
+  tempUnit = tempUnit === "F" ? "C" : "F";
+  localStorage.setItem("tempUnit", tempUnit);
+  document.getElementById("temp-unit-btn").innerHTML = `&deg;${tempUnit}`;
+  fetchWeather();
+}
+
+// Initialize button label on load
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("temp-unit-btn");
+  if (btn) btn.innerHTML = `&deg;${tempUnit}`;
+});
+
 async function fetchWeather() {
   const el = document.getElementById("weather-content");
   const countEl = document.getElementById("weather-count");
@@ -336,6 +351,7 @@ async function fetchWeather() {
       return;
     }
 
+    const isC = tempUnit === "C";
     el.innerHTML = '<div class="weather-cities">' + cities.map(c => {
       let localTime = "";
       if (c.timezone) {
@@ -345,18 +361,23 @@ async function fetchWeather() {
           });
         } catch { localTime = ""; }
       }
+      const temp = isC ? c.temp_c : c.temp_f;
+      const feel = isC ? c.feel_c : c.feel_f;
+      const wind = isC ? c.wind_kph : c.wind_mph;
+      const unit = isC ? "C" : "F";
+      const windUnit = isC ? "km/h" : "mph";
       return `
       <div class="weather-city-card">
         <button class="weather-city-remove" onclick="removeWeatherCity(${c.id})" title="Remove">&times;</button>
         <div class="weather-city-name">${c.display_name}</div>
         ${localTime ? `<div class="weather-city-time">${localTime}</div>` : ""}
-        ${c.temp !== null && c.temp !== undefined
-          ? `<div class="weather-city-temp">${Math.round(c.temp)}&deg;F</div>
+        ${temp !== null && temp !== undefined
+          ? `<div class="weather-city-temp">${Math.round(temp)}&deg;${unit}</div>
              <div class="weather-city-desc">${c.desc}</div>
              <div class="weather-city-details">
-               <span>Feels ${Math.round(c.feel)}&deg;</span>
+               <span>Feels ${Math.round(feel)}&deg;</span>
                <span>${c.hum}%</span>
-               <span>${c.wind}mph</span>
+               <span>${wind}${windUnit}</span>
              </div>`
           : '<div class="weather-city-desc">Unavailable</div>'
         }

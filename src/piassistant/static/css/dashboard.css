@@ -149,6 +149,20 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
 }
 .widget-add-btn:hover { color: var(--text); }
 
+.widget-toggle-btn {
+  background: var(--surface2);
+  border: none;
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.widget-toggle-btn:hover { filter: brightness(1.2); }
+
 /* Sessions widget */
 .session-card {
   background: var(--surface2);

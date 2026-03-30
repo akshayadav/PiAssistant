@@ -60,15 +60,21 @@ async def get_weather_cities(request: Request):
     async def fetch_one(city_id, name, display_name):
         try:
             data = await weather.get_current(location=name)
+            temp_f = data["temp_f"]
+            feel_f = data["feels_like_f"]
+            wind_mph = data["wind_mph"]
             return {
                 "id": city_id,
                 "name": name,
                 "display_name": display_name,
-                "temp": data["temp_f"],
-                "feel": data["feels_like_f"],
+                "temp_f": temp_f,
+                "temp_c": round((temp_f - 32) * 5 / 9, 1) if temp_f is not None else None,
+                "feel_f": feel_f,
+                "feel_c": round((feel_f - 32) * 5 / 9, 1) if feel_f is not None else None,
                 "desc": data["description"],
                 "hum": data["humidity"],
-                "wind": data["wind_mph"],
+                "wind_mph": wind_mph,
+                "wind_kph": round(wind_mph * 1.609, 1) if wind_mph is not None else None,
                 "timezone": data.get("timezone", "UTC"),
             }
         except Exception:
