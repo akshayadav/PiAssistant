@@ -75,6 +75,8 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Widget panel */
@@ -626,10 +628,16 @@ body.widget-resizing-both { cursor: nwse-resize; }
 
 /* Chat area */
 #chat-area {
+  flex: 1;
   border-top: 1px solid #ffffff10;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 #messages {
+  flex: 1;
+  overflow-y: auto;
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
@@ -839,27 +847,9 @@ body.widget-resizing-both { cursor: nwse-resize; }
 
 /* ===== Responsive: Desktop / Kiosk (≥900px) ===== */
 @media (min-width: 900px) {
-  #main-scroll {
-    display: flex;
-    flex-direction: column;
-  }
-
   #widgets {
     max-height: 45vh;
     overflow-y: auto;
     flex-shrink: 0;
-  }
-
-  #chat-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    min-height: 0;
-  }
-
-  #messages {
-    flex: 1;
-    overflow-y: auto;
   }
 }
