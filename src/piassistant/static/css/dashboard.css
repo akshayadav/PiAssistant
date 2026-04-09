@@ -66,17 +66,8 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
 .tab-btn.active { background: var(--surface2); color: var(--text); }
 
 /* Tab panes */
-.tab-pane { display: none; overflow: hidden; min-height: 0; }
-.tab-pane.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-
-/* Main layout (widgets + chat) */
-#main-scroll {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
+.tab-pane { display: none; min-height: 0; }
+.tab-pane.active { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
 
 /* Widget panel */
 #widgets {
@@ -86,8 +77,8 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   padding: 8px;
   background: var(--bg);
   overflow-y: auto;
-  flex-shrink: 0;
-  max-height: 50vh;
+  flex: 1;
+  align-content: start;
 }
 
 .widget {
@@ -631,7 +622,6 @@ body.widget-resizing-both { cursor: nwse-resize; }
 /* Chat area */
 #chat-area {
   flex: 1;
-  border-top: 1px solid #ffffff10;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -791,15 +781,8 @@ body.widget-resizing-both { cursor: nwse-resize; }
 
 /* ===== Responsive: Mobile (< 600px) ===== */
 @media (max-width: 599px) {
-  #main-scroll {
-    overflow-y: auto;
-  }
-
   #widgets {
     grid-template-columns: 1fr;
-    max-height: none;
-    overflow-y: visible;
-    flex-shrink: 1;
   }
 
   /* Cancel all span overrides on mobile — single column */
@@ -850,6 +833,3 @@ body.widget-resizing-both { cursor: nwse-resize; }
   }
 }
 
-/* ===== Responsive: Desktop / Kiosk (≥900px) ===== */
-@media (min-width: 900px) {
-}

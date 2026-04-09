@@ -1,6 +1,5 @@
 // === DOM refs ===
 const messagesEl = document.getElementById("messages");
-const mainScroll = document.getElementById("main-scroll");
 const inputEl = document.getElementById("msg-input");
 const sendBtn = document.getElementById("send-btn");
 const statusEl = document.getElementById("status");
@@ -64,7 +63,7 @@ function addMessage(text, role) {
   div.appendChild(body);
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
-  mainScroll.scrollTop = mainScroll.scrollHeight;
+
   return div;
 }
 
@@ -81,7 +80,7 @@ function addThinking() {
   div.appendChild(body);
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
-  mainScroll.scrollTop = mainScroll.scrollHeight;
+
 }
 
 function removeThinking() {
@@ -123,6 +122,9 @@ async function sendMessage() {
   const text = inputEl.value.trim();
   if (!text && !pendingImage) return;
   if (sending) return;
+
+  // Auto-switch to chat tab when sending
+  switchTab("chat");
 
   sending = true;
   sendBtn.disabled = true;
@@ -1145,26 +1147,17 @@ async function fetchNotes() {
 // === Tab switching ===
 
 function switchTab(tabName) {
-  // Update tab buttons
   document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.tab === tabName);
   });
-  // Update tab panes
   document.querySelectorAll(".tab-pane").forEach(pane => {
     pane.classList.toggle("active", pane.id === `tab-${tabName}`);
   });
-  // Hide chat input on terminal tab
-  const inputArea = document.getElementById("input-area");
-  const imagePreview = document.getElementById("image-preview");
-  if (tabName === "terminal") {
-    inputArea.style.display = "none";
-    imagePreview.style.display = "none";
-  } else {
-    inputArea.style.display = "";
-  }
-  // Fit terminal when switching to it
   if (tabName === "terminal" && typeof termFitAddon !== "undefined" && termFitAddon) {
     setTimeout(() => termFitAddon.fit(), 100);
+  }
+  if (tabName === "chat") {
+    messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 }
 
