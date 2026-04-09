@@ -1142,6 +1142,32 @@ async function fetchNotes() {
 
 // === Terminal Widget ===
 
+// === Tab switching ===
+
+function switchTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.tab === tabName);
+  });
+  // Update tab panes
+  document.querySelectorAll(".tab-pane").forEach(pane => {
+    pane.classList.toggle("active", pane.id === `tab-${tabName}`);
+  });
+  // Hide chat input on terminal tab
+  const inputArea = document.getElementById("input-area");
+  const imagePreview = document.getElementById("image-preview");
+  if (tabName === "terminal") {
+    inputArea.style.display = "none";
+    imagePreview.style.display = "none";
+  } else {
+    inputArea.style.display = "";
+  }
+  // Fit terminal when switching to it
+  if (tabName === "terminal" && typeof termFitAddon !== "undefined" && termFitAddon) {
+    setTimeout(() => termFitAddon.fit(), 100);
+  }
+}
+
 let term = null;
 let termWs = null;
 let termFitAddon = null;
@@ -1153,7 +1179,7 @@ async function checkTerminalAvailable() {
     if (!res.ok) return;
     const data = await res.json();
     if (data.configured) {
-      document.getElementById("terminal-section").style.display = "";
+      document.getElementById("terminal-tab-btn").style.display = "";
     }
   } catch {}
 }

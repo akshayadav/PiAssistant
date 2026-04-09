@@ -22,7 +22,7 @@ body {
   color: var(--text);
   height: 100dvh;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr auto auto;
   overflow: hidden;
 }
 
@@ -49,6 +49,25 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   font-size: 0.8rem;
 }
 .header-actions button:hover { color: var(--text); }
+
+/* Header tabs */
+.header-tabs { display: flex; gap: 4px; }
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { background: var(--surface2); color: var(--text); }
+
+/* Tab panes */
+.tab-pane { display: none; overflow: hidden; }
+.tab-pane.active { display: flex; flex-direction: column; }
 
 /* Main scrollable area (widgets + chat) */
 #main-scroll {
@@ -554,17 +573,23 @@ body.widget-resizing-both { cursor: nwse-resize; }
 .order-meta a { color: var(--blue); text-decoration: none; }
 .order-meta a:hover { text-decoration: underline; }
 
-/* Terminal widget */
+/* Terminal tab */
+#tab-terminal {
+  background: var(--bg);
+}
 #terminal-section {
-  background: var(--surface);
-  border-top: 1px solid #ffffff10;
-  border-bottom: 1px solid #ffffff10;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 #terminal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid #ffffff10;
 }
 #terminal-header h2 {
   font-size: 0.8rem;
@@ -590,23 +615,9 @@ body.widget-resizing-both { cursor: nwse-resize; }
 }
 .terminal-actions button:hover { color: var(--text); }
 #terminal-container {
-  height: 300px;
-  padding: 0 8px 8px;
-}
-#terminal-section.fullscreen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 999;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-}
-#terminal-section.fullscreen #terminal-container {
   flex: 1;
-  height: auto;
+  min-height: 0;
+  padding: 4px 8px 8px;
 }
 
 .empty-state { color: var(--text-muted); font-size: 0.8rem; font-style: italic; }
@@ -826,8 +837,9 @@ body.widget-resizing-both { cursor: nwse-resize; }
 
 /* ===== Responsive: Desktop / Kiosk (≥900px) ===== */
 @media (min-width: 900px) {
-  body {
-    grid-template-rows: auto auto 1fr auto;
+  #tab-dashboard.active {
+    display: grid;
+    grid-template-rows: 1fr auto;
   }
 
   #main-scroll {
