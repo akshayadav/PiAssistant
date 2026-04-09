@@ -76,7 +76,8 @@ class LLMService(BaseService):
         else:
             self.base_url = settings.lmstudio_url.rstrip("/")
             self.model = settings.lmstudio_model
-            self._http = httpx.AsyncClient(base_url=self.base_url, timeout=300.0)
+            self._http = httpx.AsyncClient(base_url=self.base_url, timeout=120.0)
+            self._http_vision = httpx.AsyncClient(base_url=self.base_url, timeout=180.0)
 
     async def chat(
         self,
@@ -263,12 +264,14 @@ class LLMService(BaseService):
         vision_model = self.settings.lmstudio_vision_model
         data_url = f"data:{mime_type};base64,{image_b64}"
 
-        # Use the local HTTP client if available, otherwise create one
-        if hasattr(self, "_http"):
+        # Use the vision HTTP client if available, otherwise create one
+        if hasattr(self, "_http_vision"):
+            client = self._http_vision
+        elif hasattr(self, "_http"):
             client = self._http
         else:
             client = httpx.AsyncClient(
-                base_url=self.settings.lmstudio_url.rstrip("/"), timeout=300.0,
+                base_url=self.settings.lmstudio_url.rstrip("/"), timeout=180.0,
             )
 
         try:
