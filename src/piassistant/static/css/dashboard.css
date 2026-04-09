@@ -69,14 +69,13 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
 .tab-pane { display: none; overflow: hidden; min-height: 0; }
 .tab-pane.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
-/* Main scrollable area (widgets + chat) */
+/* Main layout (widgets + chat) */
 #main-scroll {
   flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* Widget panel */
@@ -86,6 +85,9 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   gap: 8px;
   padding: 8px;
   background: var(--bg);
+  overflow-y: auto;
+  flex-shrink: 0;
+  max-height: 50vh;
 }
 
 .widget {
@@ -789,12 +791,15 @@ body.widget-resizing-both { cursor: nwse-resize; }
 
 /* ===== Responsive: Mobile (< 600px) ===== */
 @media (max-width: 599px) {
-  body {
-    grid-template-rows: auto 1fr auto;
+  #main-scroll {
+    overflow-y: auto;
   }
 
   #widgets {
     grid-template-columns: 1fr;
+    max-height: none;
+    overflow-y: visible;
+    flex-shrink: 1;
   }
 
   /* Cancel all span overrides on mobile — single column */
@@ -847,9 +852,4 @@ body.widget-resizing-both { cursor: nwse-resize; }
 
 /* ===== Responsive: Desktop / Kiosk (≥900px) ===== */
 @media (min-width: 900px) {
-  #widgets {
-    max-height: 45vh;
-    overflow-y: auto;
-    flex-shrink: 0;
-  }
 }
