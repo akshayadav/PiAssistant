@@ -1306,7 +1306,7 @@ function updateTerminalUI() {
   }
 }
 
-// === Widget Resize ===
+// === Widget Drag Resize ===
 
 const WIDGET_SIZES_KEY = "widget_sizes";
 
@@ -1314,34 +1314,37 @@ function getWidgetSizes() {
   try { return JSON.parse(localStorage.getItem(WIDGET_SIZES_KEY)) || {}; } catch { return {}; }
 }
 
-function saveWidgetSize(widgetId, width, height) {
-  const sizes = getWidgetSizes();
-  sizes[widgetId] = { w: width, h: height };
+function saveWidgetSizes(sizes) {
   localStorage.setItem(WIDGET_SIZES_KEY, JSON.stringify(sizes));
 }
 
-function applyWidgetSize(widget, w, h) {
-  // Remove existing size classes
-  widget.classList.remove("widget-w1", "widget-w2", "widget-w3", "widget-h-auto", "widget-h-small", "widget-h-medium", "widget-h-large");
-  widget.style.removeProperty("grid-column");
-  if (w) widget.classList.add(`widget-w${w}`);
-  if (h) widget.classList.add(`widget-h-${h}`);
-  // Update active buttons in menu
-  const menu = widget.querySelector(".widget-size-menu");
-  if (menu) {
-    menu.querySelectorAll(".widget-size-btn").forEach(btn => {
-      const isWidth = btn.dataset.w !== undefined;
-      const isHeight = btn.dataset.h !== undefined;
-      if (isWidth) btn.classList.toggle("active", btn.dataset.w === String(w || getDefaultWidth(widget)));
-      if (isHeight) btn.classList.toggle("active", btn.dataset.h === (h || "auto"));
-    });
-  }
+function getGridColumnWidth() {
+  const grid = document.getElementById("widgets");
+  const style = getComputedStyle(grid);
+  const cols = style.gridTemplateColumns.split(" ");
+  return parseFloat(cols[0]) || 200;
 }
 
-function getDefaultWidth(widget) {
-  // Derive from original inline style
-  const inlineCol = widget.getAttribute("data-default-w");
-  return inlineCol ? parseInt(inlineCol) : 1;
+function getMaxColumns() {
+  const grid = document.getElementById("widgets");
+  const style = getComputedStyle(grid);
+  return style.gridTemplateColumns.split(" ").length;
+}
+
+function applyWidgetSavedSize(widget) {
+  const sizes = getWidgetSizes();
+  const saved = sizes[widget.id];
+  if (!saved) return;
+  // Apply column span
+  if (saved.w) {
+    widget.classList.remove("widget-w1", "widget-w2", "widget-w3", "widget-w4");
+    widget.style.removeProperty("grid-column");
+    widget.classList.add(`widget-w${saved.w}`);
+  }
+  // Apply explicit height
+  if (saved.h) {
+    widget.style.height = saved.h + "px";
+  }
 }
 
 function initWidgetResize() {
@@ -1352,88 +1355,98 @@ function initWidgetResize() {
     const id = widget.id;
     if (!id) return;
 
-    // Store original width as data attribute
+    // Store default column span from inline style
     const inlineStyle = widget.style.gridColumn;
     if (inlineStyle && inlineStyle.includes("span")) {
-      const span = parseInt(inlineStyle.replace(/[^\d]/g, "")) || 1;
-      widget.setAttribute("data-default-w", span);
+      widget.setAttribute("data-default-w", parseInt(inlineStyle.replace(/[^\d]/g, "")) || 1);
     } else {
       widget.setAttribute("data-default-w", "1");
     }
 
-    // Add resize handle (grip icon)
-    const handle = document.createElement("div");
-    handle.className = "widget-resize-handle";
-    handle.innerHTML = '<svg viewBox="0 0 24 24"><path d="M22 22H20V20H22V22ZM22 18H18V20H20V22H22V18ZM18 22H16V20H18V22ZM22 14H14V16H16V18H18V16H20V18H22V14ZM14 22H12V20H14V22ZM18 18H16V16H18V18ZM10 22H8V20H10V22Z"/></svg>';
-    handle.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleSizeMenu(widget);
-    });
-    widget.appendChild(handle);
+    // Add drag zones: right edge, bottom edge, corner
+    const dragRight = document.createElement("div");
+    dragRight.className = "widget-drag-right";
+    const dragBottom = document.createElement("div");
+    dragBottom.className = "widget-drag-bottom";
+    const dragCorner = document.createElement("div");
+    dragCorner.className = "widget-drag-corner";
+    widget.appendChild(dragRight);
+    widget.appendChild(dragBottom);
+    widget.appendChild(dragCorner);
 
-    // Add size menu
-    const menu = document.createElement("div");
-    menu.className = "widget-size-menu";
-    menu.addEventListener("click", e => e.stopPropagation());
+    // Right edge drag — adjusts column span
+    setupDrag(dragRight, widget, "horizontal");
+    // Bottom edge drag — adjusts pixel height
+    setupDrag(dragBottom, widget, "vertical");
+    // Corner drag — adjusts both
+    setupDrag(dragCorner, widget, "both");
 
-    const saved = sizes[id];
-    const defaultW = parseInt(widget.getAttribute("data-default-w"));
-    const currentW = saved ? saved.w : defaultW;
-    const currentH = saved ? saved.h : "auto";
+    // Apply saved sizes on load
+    applyWidgetSavedSize(widget);
+  });
+}
 
-    menu.innerHTML = `
-      <label>Width</label>
-      <div class="widget-size-options">
-        <button class="widget-size-btn ${currentW === 1 ? 'active' : ''}" data-w="1" onclick="setWidgetWidth('${id}', 1)">1</button>
-        <button class="widget-size-btn ${currentW === 2 ? 'active' : ''}" data-w="2" onclick="setWidgetWidth('${id}', 2)">2</button>
-        <button class="widget-size-btn ${currentW === 3 ? 'active' : ''}" data-w="3" onclick="setWidgetWidth('${id}', 3)">3</button>
-      </div>
-      <label>Height</label>
-      <div class="widget-size-options">
-        <button class="widget-size-btn ${currentH === 'auto' ? 'active' : ''}" data-h="auto" onclick="setWidgetHeight('${id}', 'auto')">Auto</button>
-        <button class="widget-size-btn ${currentH === 'small' ? 'active' : ''}" data-h="small" onclick="setWidgetHeight('${id}', 'small')">S</button>
-        <button class="widget-size-btn ${currentH === 'medium' ? 'active' : ''}" data-h="medium" onclick="setWidgetHeight('${id}', 'medium')">M</button>
-        <button class="widget-size-btn ${currentH === 'large' ? 'active' : ''}" data-h="large" onclick="setWidgetHeight('${id}', 'large')">L</button>
-      </div>
-    `;
-    widget.appendChild(menu);
+function setupDrag(handle, widget, direction) {
+  handle.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-    // Apply saved sizes
-    if (saved) {
-      applyWidgetSize(widget, saved.w, saved.h);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startHeight = widget.getBoundingClientRect().height;
+    const colWidth = getGridColumnWidth();
+    const gap = parseFloat(getComputedStyle(document.getElementById("widgets")).gap) || 8;
+    const maxCols = getMaxColumns();
+
+    // Read current span
+    const sizes = getWidgetSizes();
+    const saved = sizes[widget.id] || {};
+    const startSpan = saved.w || parseInt(widget.getAttribute("data-default-w")) || 1;
+
+    widget.classList.add("resizing");
+    const cursorClass = direction === "horizontal" ? "widget-resizing"
+      : direction === "vertical" ? "widget-resizing-v"
+      : "widget-resizing-both";
+    document.body.classList.add(cursorClass);
+
+    let currentSpan = startSpan;
+    let currentHeight = saved.h || null;
+
+    function onMouseMove(ev) {
+      if (direction === "horizontal" || direction === "both") {
+        const dx = ev.clientX - startX;
+        // Calculate new span: each extra column is colWidth + gap
+        const rawSpan = startSpan + Math.round(dx / (colWidth + gap));
+        currentSpan = Math.max(1, Math.min(rawSpan, maxCols));
+        widget.classList.remove("widget-w1", "widget-w2", "widget-w3", "widget-w4");
+        widget.style.removeProperty("grid-column");
+        widget.classList.add(`widget-w${currentSpan}`);
+      }
+      if (direction === "vertical" || direction === "both") {
+        const dy = ev.clientY - startY;
+        currentHeight = Math.max(80, Math.round(startHeight + dy));
+        widget.style.height = currentHeight + "px";
+      }
     }
+
+    function onMouseUp() {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      widget.classList.remove("resizing");
+      document.body.classList.remove(cursorClass);
+
+      // Save
+      const sizes = getWidgetSizes();
+      const entry = sizes[widget.id] || {};
+      if (direction === "horizontal" || direction === "both") entry.w = currentSpan;
+      if (direction === "vertical" || direction === "both") entry.h = currentHeight;
+      sizes[widget.id] = entry;
+      saveWidgetSizes(sizes);
+    }
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
   });
-
-  // Close menus when clicking outside
-  document.addEventListener("click", () => {
-    document.querySelectorAll(".widget-size-menu.open").forEach(m => m.classList.remove("open"));
-  });
-}
-
-function toggleSizeMenu(widget) {
-  const menu = widget.querySelector(".widget-size-menu");
-  const wasOpen = menu.classList.contains("open");
-  // Close all menus first
-  document.querySelectorAll(".widget-size-menu.open").forEach(m => m.classList.remove("open"));
-  if (!wasOpen) menu.classList.add("open");
-}
-
-function setWidgetWidth(widgetId, w) {
-  const widget = document.getElementById(widgetId);
-  const sizes = getWidgetSizes();
-  const current = sizes[widgetId] || { w: parseInt(widget.getAttribute("data-default-w")), h: "auto" };
-  current.w = w;
-  saveWidgetSize(widgetId, current.w, current.h);
-  applyWidgetSize(widget, current.w, current.h);
-}
-
-function setWidgetHeight(widgetId, h) {
-  const widget = document.getElementById(widgetId);
-  const sizes = getWidgetSizes();
-  const current = sizes[widgetId] || { w: parseInt(widget.getAttribute("data-default-w")), h: "auto" };
-  current.h = h;
-  saveWidgetSize(widgetId, current.w, current.h);
-  applyWidgetSize(widget, current.w, current.h);
 }
 
 // === Refresh all widgets ===
