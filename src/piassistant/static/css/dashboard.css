@@ -21,8 +21,8 @@ body {
   background: var(--bg);
   color: var(--text);
   height: 100dvh;
-  display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -66,13 +66,15 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
 .tab-btn.active { background: var(--surface2); color: var(--text); }
 
 /* Tab panes */
-.tab-pane { display: none; overflow: hidden; }
-.tab-pane.active { display: flex; flex-direction: column; }
+.tab-pane { display: none; overflow: hidden; min-height: 0; }
+.tab-pane.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
 /* Main scrollable area (widgets + chat) */
 #main-scroll {
+  flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  min-height: 0;
 }
 
 /* Widget panel */
@@ -837,24 +839,23 @@ body.widget-resizing-both { cursor: nwse-resize; }
 
 /* ===== Responsive: Desktop / Kiosk (≥900px) ===== */
 @media (min-width: 900px) {
-  #tab-dashboard.active {
-    display: grid;
-    grid-template-rows: 1fr auto;
-  }
-
   #main-scroll {
-    display: contents;
+    display: flex;
+    flex-direction: column;
   }
 
   #widgets {
     max-height: 45vh;
     overflow-y: auto;
+    flex-shrink: 0;
   }
 
   #chat-area {
+    flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-height: 0;
   }
 
   #messages {
