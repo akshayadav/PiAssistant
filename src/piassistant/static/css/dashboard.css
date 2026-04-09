@@ -70,7 +70,72 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   border-radius: var(--radius);
   padding: 10px 12px;
   overflow-y: auto;
+  position: relative;
 }
+
+/* Widget resize controls */
+.widget-resize-handle {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+.widget:hover .widget-resize-handle { opacity: 0.5; }
+.widget-resize-handle:hover { opacity: 1 !important; }
+.widget-resize-handle svg {
+  width: 12px;
+  height: 12px;
+  fill: var(--text-muted);
+}
+
+/* Widget size button group in header */
+.widget-size-menu {
+  display: none;
+  position: absolute;
+  bottom: 24px;
+  right: 4px;
+  background: var(--surface2);
+  border: 1px solid #ffffff20;
+  border-radius: 8px;
+  padding: 6px;
+  z-index: 20;
+  min-width: 120px;
+}
+.widget-size-menu.open { display: block; }
+.widget-size-menu label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.widget-size-options {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.widget-size-btn {
+  background: var(--bg);
+  border: 1px solid #ffffff15;
+  color: var(--text-muted);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  flex: 1;
+  text-align: center;
+}
+.widget-size-btn:hover { color: var(--text); border-color: #ffffff30; }
+.widget-size-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 .widget h2 {
   font-size: 0.8rem;
   color: var(--text-muted);
@@ -87,6 +152,15 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   border-radius: 8px;
   font-size: 0.7rem;
 }
+
+/* Widget size classes */
+.widget-w1 { grid-column: span 1 !important; }
+.widget-w2 { grid-column: span 2 !important; }
+.widget-w3 { grid-column: span 3 !important; }
+.widget-h-auto { max-height: none !important; height: auto !important; }
+.widget-h-small { max-height: 180px !important; height: 180px !important; }
+.widget-h-medium { max-height: 300px !important; height: 300px !important; }
+.widget-h-large { max-height: 500px !important; height: 500px !important; }
 
 /* Weather widget */
 #weather-widget {
@@ -739,7 +813,11 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   /* Cancel all span overrides on mobile — single column */
   #widgets > .widget {
     grid-column: span 1 !important;
+    height: auto !important;
+    max-height: none !important;
   }
+  .widget-resize-handle,
+  .widget-size-menu { display: none !important; }
 
   .widget {
     max-height: none;
