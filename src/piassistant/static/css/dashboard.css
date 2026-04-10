@@ -22,12 +22,9 @@ div, section, article, aside, nav, main {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Scrollbar styling for Chromium */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #ffffff20; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #ffffff40; }
-::-webkit-scrollbar-corner { background: transparent; }
+/* Hide scrollbars but keep scrolling */
+::-webkit-scrollbar { width: 0; height: 0; background: transparent; }
+* { scrollbar-width: none; }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
