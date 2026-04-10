@@ -1350,6 +1350,8 @@ function getMaxColumns() {
   return style.gridTemplateColumns.split(" ").length;
 }
 
+const WIDGET_MIN_HEIGHT = 80;
+
 function applyWidgetSavedSize(widget) {
   const sizes = getWidgetSizes();
   const saved = sizes[widget.id];
@@ -1360,9 +1362,9 @@ function applyWidgetSavedSize(widget) {
     widget.style.removeProperty("grid-column");
     widget.classList.add(`widget-w${saved.w}`);
   }
-  // Apply explicit height
+  // Apply explicit height (enforce minimum)
   if (saved.h) {
-    widget.style.height = saved.h + "px";
+    widget.style.height = Math.max(saved.h, WIDGET_MIN_HEIGHT) + "px";
   }
 }
 
