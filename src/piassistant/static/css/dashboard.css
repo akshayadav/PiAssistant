@@ -15,8 +15,12 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-*:focus { outline: none; }
+*:focus, *:focus-visible, *:focus-within { outline: none !important; }
 *::-moz-focus-inner { border: 0; }
+div, section, article, aside, nav, main {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* Scrollbar styling for Chromium */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -95,11 +99,17 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   border-radius: var(--radius);
   padding: 10px 12px;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
-  border: none;
-  outline: none;
+  border: none !important;
+  outline: none !important;
   -webkit-box-shadow: none;
   box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.widget:hover, .widget:focus, .widget:active {
+  border: none !important;
+  outline: none !important;
 }
 
 /* Widget edge-drag resize */
