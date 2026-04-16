@@ -10,9 +10,9 @@ class Settings(BaseSettings):
     claude_model: str = "claude-sonnet-4-6"
 
     # Local LLM via LM Studio (used when llm_backend = "local")
-    lmstudio_url: str = "http://10.0.0.232:1234"
-    lmstudio_model: str = "google/gemma-3-12b"              # Chat brain (tool use)
-    lmstudio_vision_model: str = "google/gemma-3-12b"  # Multimodal model for image analysis
+    lmstudio_url: str = "http://10.0.0.131:1234"
+    lmstudio_model: str = "google/gemma-4-e2b"           # Chat brain (tool use)
+    lmstudio_vision_model: str = "google/gemma-4-e2b"  # Multimodal model for image analysis
 
     # Weather (Open-Meteo — no API key needed)
     default_location: str = "Idaho Falls, ID"

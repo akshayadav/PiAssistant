@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Project | What | Pi ↔ Pico | Brain | Stack |
 |---|---|---|---|---|
-| **PiAssistant** (this) | General-purpose smart assistant + Pico W hub | WiFi HTTP/MQTT | Claude tool use (agentic) | Python + FastAPI |
+| **PiAssistant** (this) | General-purpose smart assistant + Pico W hub + AI rover | WiFi HTTP/MQTT + I2C (rover) | Claude tool use (agentic) | Python + FastAPI |
 | **PiBot** | Desk companion robot with face/arms | Serial (UART) | Claude chat (no tools) | Python + Flask |
 | **PicoWeather** | Standalone weather display | N/A (no Pi) | None | MicroPython |
 
@@ -44,6 +44,24 @@ When migrating from Pi 5 to Jetson Orin Nano:
 | Mac Mini needed? | Yes, for heavy tasks | Optional — Jetson handles most locally |
 
 The service abstraction makes this a config/deployment change, not a rewrite. Mac Mini becomes optional on Jetson Orin.
+
+### Decision: Rover Integration (Pico via I2C)
+
+PiAssistant is being mounted on a **Yahboom Suspension 4WD rover chassis** (aluminum, pendulum suspension, 12V 520 encoder motors) to become a mobile AI assistant and security camera on wheels. A plain Pico (not Pico W) handles real-time motor/sensor control, connected to the Pi/Jetson via I2C.
+
+| Factor | Pi GPIO Direct | Pico W (WiFi) | Pico (I2C) — chosen |
+|---|---|---|---|
+| Motor PWM timing | Jitter (Linux isn't real-time) | Fine but adds WiFi latency | Hardware PWM, deterministic |
+| Latency | N/A | 5-50ms per request | ~microseconds |
+| Crash isolation | Bad motor code hangs Pi | Separate but WiFi can drop | Separate, wired, rock solid |
+| Cost | No extra board | Pico W (~$6) | Plain Pico (~$4) |
+| Existing pattern | New | Matches PicoWeather | New (I2C register-based) |
+
+**Architecture**: Pi/Jetson (brain) sends I2C commands to Pico (body controller, address 0x42). Pico drives motors via L298N H-bridge, reads sensors (ultrasonic, IMU, PIR, cliff, battery), and controls camera pan-tilt servos. Pico has local safety features (watchdog, cliff stop, obstacle stop) that act without waiting for Pi.
+
+**Power**: Single 3S LiPo (11.1V 5000mAh) with BMS for USB-C charge-while-running. Pololu D24V50F5 buck converter provides clean 5V for Pi (Rail 1). Direct 11.1V feeds L298N for motors (Rail 2). One charge port charges both rails.
+
+See [docs/rover-design.md](docs/rover-design.md) for complete hardware design with all options evaluated and decision rationale.
 
 ### Decision: Local LLM on Mac Mini
 
@@ -93,6 +111,9 @@ See [docs/local-llm-plan.md](docs/local-llm-plan.md) for full decision rationale
 | Interfaces | Terminal (full), Voice (common), Web UI | Terminal first; voice + web deferred |
 | Data sources | Free APIs (Open-Meteo, NewsAPI) | Open-Meteo needs no key; web scraping added later |
 | Pico W comms | HTTP now, MQTT later | Pi caches data, serves Picos — one API fetch serves all |
+| Rover body | Pico via I2C (not WiFi) | Real-time motor/sensor control, microsecond latency, crash isolation |
+| Rover chassis | Yahboom Suspension 4WD (aluminum, pendulum suspension, 520 encoder motors) | Protects electronics, mounting space, 12V motors with encoders included |
+| Rover power | Single 3S LiPo + BMS + buck converter | One charge port, two rails (5V brain + 11.1V motors), charge-while-running |
 | Pi role | Mothership — gateway, cache, orchestrator | Minimizes API calls, centralizes data |
 
 ## Project Structure
@@ -234,16 +255,16 @@ The REPL talks to FastAPI over HTTP, not directly to the brain. This means CLI c
 - [x] Image upload + vision — dashboard camera button, image preview, Gemma 3 12B multimodal analysis on Mac Mini, 100 tests passing
 
 ### Up Next (in priority order)
-1. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
-2. **Voice STT** — speech-to-text for hands-free interaction, offloaded to Mac Mini
-3. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
+1. **Rover integration** — Yahboom Suspension 4WD chassis, Pico body controller (I2C), Pi Camera Wide NoIR, pan-tilt, security patrol. See [docs/rover-design.md](docs/rover-design.md)
+2. **USB log archiving** — external USB drive at /mnt/usblog, `log_archive_path` config setting, fstab with nofail
+3. **Voice STT** — speech-to-text for hands-free interaction, offloaded to Mac Mini
+4. **MQTT push** — Pi pushes weather updates to Pico Ws instead of polling
 
 ### Future
 - Mac Mini monitor app — dashboard/CLI to monitor, log, and manage all Mac Mini services (Kokoro TTS, LM Studio, etc.)
 - Upgrade local LLM model — Qwen 3 8B MLX or Qwen3.5-35B-A3B MoE for better speed/quality
-- AI camera hat integration
-- Motors/servos for arms/wheels
-- Jetson Nano/Orin migration (can serve as second local LLM backend)
+- RPLidar A1 — 360° SLAM for autonomous rover navigation
+- Jetson Nano/Orin migration (can serve as second local LLM backend, also rover brain upgrade)
 - Web scraping as alternative data source
 
 ## Build & Run Commands
@@ -374,4 +395,7 @@ Terminal section is hidden when not configured. WebSocket auth uses `?token=` qu
 | Mac Mini offload | Already done for LLM + TTS; add more services as needed |
 | Better local model | Change `LMSTUDIO_MODEL` in `.env` — Qwen 3 8B MLX or Qwen3.5-35B-A3B MoE recommended |
 | Jetson as LLM backend | Same OpenAI-compatible API — change `LMSTUDIO_URL` to point at Jetson |
-| Hardware (camera, servos) | New services + new tool definitions, same pattern |
+| Rover motor control | Add `RoverService` + I2C to Pico body controller, same BaseService pattern |
+| Rover security patrol | Add patrol routes, PIR wake-up, camera recording — new tools + dashboard widget |
+| RPLidar SLAM | USB serial to Pi/Jetson, room mapping + autonomous navigation |
+| Rover camera vision | Pi Camera → Gemma 3 12B on Mac Mini (or Jetson GPU) for object detection |
