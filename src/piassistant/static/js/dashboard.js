@@ -1362,9 +1362,10 @@ function applyWidgetSavedSize(widget) {
     widget.style.removeProperty("grid-column");
     widget.classList.add(`widget-w${saved.w}`);
   }
-  // Apply explicit height (enforce minimum)
+  // Apply explicit max-height (enforce minimum) — use max-height instead of height
+  // so the widget doesn't overflow behind grid neighbors
   if (saved.h) {
-    widget.style.height = Math.max(saved.h, WIDGET_MIN_HEIGHT) + "px";
+    widget.style.maxHeight = Math.max(saved.h, WIDGET_MIN_HEIGHT) + "px";
   }
 }
 
@@ -1446,7 +1447,7 @@ function setupDrag(handle, widget, direction) {
       if (direction === "vertical" || direction === "both") {
         const dy = ev.clientY - startY;
         currentHeight = Math.max(80, Math.round(startHeight + dy));
-        widget.style.height = currentHeight + "px";
+        widget.style.maxHeight = currentHeight + "px";
       }
     }
 

@@ -105,6 +105,8 @@ header h1 { font-size: 1.1rem; font-weight: 600; }
   box-shadow: none;
   -webkit-tap-highlight-color: transparent;
   min-height: 80px;
+  /* Prevent widgets from expanding behind neighbors */
+  align-self: start;
 }
 .widget:hover, .widget:focus, .widget:active {
   border: none !important;
