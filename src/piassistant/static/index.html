@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Assistant</title>
-<link rel="stylesheet" href="/static/css/dashboard.css?v=35">
+<link rel="stylesheet" href="/static/css/dashboard.css?v=36">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
@@ -32,13 +32,13 @@
 <div id="tab-dashboard" class="tab-pane active">
 <div id="widgets">
   <!-- Calendar -->
-  <div class="widget" id="calendar-widget" style="grid-column: span 2">
+  <div class="widget widget-wide" id="calendar-widget">
     <h2>Calendar <span class="count" id="calendar-count">0</span></h2>
     <div id="calendar-content"><div class="empty-state">Loading...</div></div>
   </div>
 
   <!-- Weather -->
-  <div class="widget" id="weather-widget" style="grid-column: span 2">
+  <div class="widget widget-wide" id="weather-widget">
     <h2>Weather <span class="count" id="weather-count">0</span>
       <button class="widget-toggle-btn" id="temp-unit-btn" onclick="toggleTempUnit()" title="Switch units">&deg;F</button>
       <button class="widget-add-btn" onclick="toggleWeatherForm()" title="Add city">+</button>
@@ -95,7 +95,7 @@
   </div>
 
   <!-- News -->
-  <div class="widget" id="news-widget" style="grid-column: span 2">
+  <div class="widget widget-wide" id="news-widget">
     <h2>News <span class="count" id="news-count">0</span>
       <button class="widget-add-btn" id="news-tts-btn" onclick="speakNews()" title="Read headlines aloud">▶ Read</button>
       <button class="widget-add-btn" onclick="toggleNewsForm()" title="Add feed">+</button>
@@ -120,7 +120,7 @@
   </div>
 
   <!-- Orders -->
-  <div class="widget" id="orders-widget" style="grid-column: span 2">
+  <div class="widget widget-wide" id="orders-widget">
     <h2>Orders <span class="count" id="orders-count">0</span>
       <button class="widget-add-btn" onclick="refreshOrders()" title="Refresh from Amazon">↻</button>
     </h2>
@@ -128,7 +128,7 @@
   </div>
 
   <!-- Grocery -->
-  <div class="widget" id="grocery-widget" style="grid-column: span 2">
+  <div class="widget widget-wide" id="grocery-widget">
     <h2>Grocery <span class="count" id="grocery-count">0</span></h2>
     <div id="grocery-content"><div class="empty-state">Grocery list empty</div></div>
   </div>
@@ -185,7 +185,7 @@
   <button onclick="dismissTimerAlert()">Dismiss</button>
 </div>
 
-<script src="/static/js/dashboard.js?v=28"></script>
+<script src="/static/js/dashboard.js?v=29"></script>
 
 </body>
 </html>

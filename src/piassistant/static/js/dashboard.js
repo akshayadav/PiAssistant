@@ -1339,15 +1339,14 @@ function saveWidgetSizes(sizes) {
 
 function getGridColumnWidth() {
   const grid = document.getElementById("widgets");
-  const style = getComputedStyle(grid);
-  const cols = style.gridTemplateColumns.split(" ");
-  return parseFloat(cols[0]) || 200;
+  const gap = parseFloat(getComputedStyle(grid).gap) || 8;
+  // Estimate single-column width from container
+  const available = grid.clientWidth - gap * 5; // assume ~6 columns
+  return Math.max(available / 6, 200);
 }
 
 function getMaxColumns() {
-  const grid = document.getElementById("widgets");
-  const style = getComputedStyle(grid);
-  return style.gridTemplateColumns.split(" ").length;
+  return 4; // max span for drag resize
 }
 
 const WIDGET_MIN_HEIGHT = 80;
@@ -1356,14 +1355,12 @@ function applyWidgetSavedSize(widget) {
   const sizes = getWidgetSizes();
   const saved = sizes[widget.id];
   if (!saved) return;
-  // Apply column span
+  // Apply width class
   if (saved.w) {
     widget.classList.remove("widget-w1", "widget-w2", "widget-w3", "widget-w4");
-    widget.style.removeProperty("grid-column");
     widget.classList.add(`widget-w${saved.w}`);
   }
-  // Apply explicit max-height (enforce minimum) — use max-height instead of height
-  // so the widget doesn't overflow behind grid neighbors
+  // Apply explicit max-height (enforce minimum)
   if (saved.h) {
     widget.style.maxHeight = Math.max(saved.h, WIDGET_MIN_HEIGHT) + "px";
   }
@@ -1377,13 +1374,8 @@ function initWidgetResize() {
     const id = widget.id;
     if (!id) return;
 
-    // Store default column span from inline style
-    const inlineStyle = widget.style.gridColumn;
-    if (inlineStyle && inlineStyle.includes("span")) {
-      widget.setAttribute("data-default-w", parseInt(inlineStyle.replace(/[^\d]/g, "")) || 1);
-    } else {
-      widget.setAttribute("data-default-w", "1");
-    }
+    // Store default width from class
+    widget.setAttribute("data-default-w", widget.classList.contains("widget-wide") ? "2" : "1");
 
     // Add drag zones: right edge, bottom edge, corner
     const dragRight = document.createElement("div");
@@ -1440,8 +1432,7 @@ function setupDrag(handle, widget, direction) {
         // Calculate new span: each extra column is colWidth + gap
         const rawSpan = startSpan + Math.round(dx / (colWidth + gap));
         currentSpan = Math.max(1, Math.min(rawSpan, maxCols));
-        widget.classList.remove("widget-w1", "widget-w2", "widget-w3", "widget-w4");
-        widget.style.removeProperty("grid-column");
+        widget.classList.remove("widget-w1", "widget-w2", "widget-w3", "widget-w4", "widget-wide");
         widget.classList.add(`widget-w${currentSpan}`);
       }
       if (direction === "vertical" || direction === "both") {
