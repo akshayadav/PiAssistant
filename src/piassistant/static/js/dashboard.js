@@ -1329,6 +1329,12 @@ function updateTerminalUI() {
 
 const WIDGET_SIZES_KEY = "widget_sizes";
 
+// Clear stale saved heights from old grid layout (one-time migration)
+if (!localStorage.getItem("widget_sizes_v2")) {
+  localStorage.removeItem(WIDGET_SIZES_KEY);
+  localStorage.setItem("widget_sizes_v2", "1");
+}
+
 function getWidgetSizes() {
   try { return JSON.parse(localStorage.getItem(WIDGET_SIZES_KEY)) || {}; } catch { return {}; }
 }
