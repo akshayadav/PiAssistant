@@ -45,21 +45,28 @@ When migrating from Pi 5 to Jetson Orin Nano:
 
 The service abstraction makes this a config/deployment change, not a rewrite. Mac Mini becomes optional on Jetson Orin.
 
-### Decision: Rover Integration (Pico via I2C)
+### Decision: Rover Integration (Jetson Orin Nano + Pico 2W via I2C)
 
-PiAssistant is being mounted on a **Yahboom Suspension 4WD rover chassis** (aluminum, pendulum suspension, 12V 520 encoder motors) to become a mobile AI assistant and security camera on wheels. A plain Pico (not Pico W) handles real-time motor/sensor control, connected to the Pi/Jetson via I2C.
+PiAssistant is being mounted on a **Yahboom Suspension 4WD rover chassis** (aluminum, pendulum suspension, 12V 520 encoder motors) to become a mobile AI assistant and security camera on wheels. A **Jetson Orin Nano Super Dev Kit** (JetPack 6.2, user-owned) is the brain. A **Pico 2W** (RP2350, user-owned, **WiFi disabled**) handles real-time motor/sensor control via I2C.
 
-| Factor | Pi GPIO Direct | Pico W (WiFi) | Pico (I2C) — chosen |
+| Factor | Jetson GPIO Direct | Pico 2W WiFi | **Pico 2W I2C — chosen** |
 |---|---|---|---|
 | Motor PWM timing | Jitter (Linux isn't real-time) | Fine but adds WiFi latency | Hardware PWM, deterministic |
 | Latency | N/A | 5-50ms per request | ~microseconds |
-| Crash isolation | Bad motor code hangs Pi | Separate but WiFi can drop | Separate, wired, rock solid |
-| Cost | No extra board | Pico W (~$6) | Plain Pico (~$4) |
-| Existing pattern | New | Matches PicoWeather | New (I2C register-based) |
+| Crash isolation | Bad motor code hangs Jetson | Separate but WiFi can drop | Separate, wired, rock solid |
+| Cost | No extra board | Already owned | Already owned |
 
-**Architecture**: Pi/Jetson (brain) sends I2C commands to Pico (body controller, address 0x42). Pico drives motors via L298N H-bridge, reads sensors (ultrasonic, IMU, PIR, cliff, battery), and controls camera pan-tilt servos. Pico has local safety features (watchdog, cliff stop, obstacle stop) that act without waiting for Pi.
+**Why Pico 2W over plain Pico**: User already owns Pico 2W boards; the RP2350 silicon has a hardware FPU that accelerates PID / IMU fusion math, 520KB RAM (vs 264KB on RP2040), and the same I2C peripheral layout — drop-in I2C pinout replacement. WiFi is disabled in firmware (never import `network`) to save ~30 mA and avoid RF contention.
 
-**Power**: Single 3S LiPo (11.1V 5000mAh) with BMS for USB-C charge-while-running. Pololu D24V50F5 buck converter provides clean 5V for Pi (Rail 1). Direct 11.1V feeds L298N for motors (Rail 2). One charge port charges both rails.
+**Why Jetson over Pi 5**: User purchased the Jetson Orin Nano Super Dev Kit (67 TOPS, 1024 CUDA cores). Unlocks on-device local LLM (~30-40 tok/s), real-time YOLO object detection, local Whisper STT, and local Gemma vision — removes the Mac Mini dependency that the Pi 5 had. Mac Mini stays reachable as a fallback LLM/TTS backend via `LLM_BACKEND_FALLBACK`.
+
+**Architecture**: Jetson (brain) sends I2C commands to Pico 2W (body controller, address 0x42). Pico drives **2 track motors** (L + R tank tracks) via L298N H-bridge, reads sensors (ultrasonic, IMU, PIR, cliff, battery), and controls camera pan-tilt servos. Pico has local safety features (watchdog, cliff stop, obstacle stop) that act without waiting for Jetson.
+
+**Camera**: **Waveshare IMX219-160IR** (NoIR, 160° FOV) — uses JetPack 6.2's in-tree IMX219 driver. Pi Cam 3 Wide NoIR (IMX708) dropped because Jetson driver support is community-only and fragile across JetPack updates. Requires a 22-pin to 15-pin CSI FFC cable (500mm) because Orin Nano has 22-pin connectors but Waveshare ships with 15-pin only.
+
+**Power**: Single 3S LiPo (11.1V 5000mAh) with AEDIKO 3S 20A BMS (discharge protection only — no built-in charger). Charging uses a dedicated SKYRC iMAX B6AC V2 balance charger (RC hobbyist standard) via the battery's balance leads. **11.1V goes directly to the Jetson barrel jack** — no buck needed (Jetson accepts 9-20V). Two AITIAO Mini-360 buck converters provide 5V: one for Pico 2W (clean, isolated — preserves watchdog safety when Jetson crashes), one for SG90 servos + MAX98357A audio amp (noisy loads). Direct 11.1V feeds L298N for the 2 track motors.
+
+**Critical assembly warning**: Mini-360 modules ship at random factory output voltage (often 12V). Must be calibrated to 5.0V with a multimeter BEFORE connecting the Pico 2W or any delicate component. See `docs/rover-design.md` "Critical Assembly Notes" for full pre-wiring checklist.
 
 See [docs/rover-design.md](docs/rover-design.md) for complete hardware design with all options evaluated and decision rationale.
 
@@ -111,9 +118,11 @@ See [docs/local-llm-plan.md](docs/local-llm-plan.md) for full decision rationale
 | Interfaces | Terminal (full), Voice (common), Web UI | Terminal first; voice + web deferred |
 | Data sources | Free APIs (Open-Meteo, NewsAPI) | Open-Meteo needs no key; web scraping added later |
 | Pico W comms | HTTP now, MQTT later | Pi caches data, serves Picos — one API fetch serves all |
-| Rover body | Pico via I2C (not WiFi) | Real-time motor/sensor control, microsecond latency, crash isolation |
-| Rover chassis | Yahboom Suspension 4WD (aluminum, pendulum suspension, 520 encoder motors) | Protects electronics, mounting space, 12V motors with encoders included |
-| Rover power | Single 3S LiPo + BMS + buck converter | One charge port, two rails (5V brain + 11.1V motors), charge-while-running |
+| Rover brain | Jetson Orin Nano Super Dev Kit (JetPack 6.2) | 67 TOPS, on-device LLM/vision/STT, removes Mac Mini dependency, simpler power (accepts 11.1V directly) |
+| Rover body | Pico 2W via I2C, WiFi disabled | Already owned, RP2350 hardware FPU, real-time control, crash isolation |
+| Rover chassis | LewanSoul Suspended Tracked Chassis (B0CTK7YHQK) — anodized aluminum double-layer, 8-channel carbon steel spring suspension, 12V JGB3865-520R45-12 Hall-encoder motors, tank tracks | Yahboom rubber-wheel SKUs out of stock 2026-04-18; only in-stock option with real suspension + 12V encoders; 2-channel tank steering keeps L298N wiring unchanged |
+| Rover camera | Waveshare IMX219-160IR (NoIR, 160° FOV) + 22→15-pin 500mm FFC | In-tree IMX219 driver in JP 6.2, NoIR for night vision with 850nm IR LEDs |
+| Rover power | Single 3S LiPo + BMS, direct 11.1V to Jetson + 2× Mini-360 bucks | One charge port; Jetson takes 11.1V direct (no brain buck); Pico has dedicated 5V buck to preserve watchdog safety |
 | Pi role | Mothership — gateway, cache, orchestrator | Minimizes API calls, centralizes data |
 
 ## Project Structure
