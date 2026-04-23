@@ -647,6 +647,58 @@ body.widget-resizing-both { cursor: nwse-resize; }
   padding: 4px 8px 8px;
 }
 
+/* Feed tab */
+#tab-feed {
+  background: var(--bg);
+}
+#feed-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+#feed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid #ffffff10;
+}
+#feed-header h2 {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.feed-actions {
+  display: flex;
+  gap: 6px;
+}
+.feed-actions button {
+  background: var(--surface2);
+  border: none;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+.feed-actions button:hover { color: var(--text); }
+#feed-container {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: #000;
+}
+#feed-img:fullscreen { max-width: 100vw; max-height: 100vh; object-fit: contain; }
+
 .empty-state { color: var(--text-muted); font-size: 0.8rem; font-style: italic; }
 
 /* Chat area */

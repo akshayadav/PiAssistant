@@ -20,6 +20,7 @@ from .services.sysmon import SystemMonitorService
 from .services.network import NetworkService
 from .services.calendar import CalendarService
 from .services.tts import TTSService
+from .services.camera import CameraService
 from .brain.agent import Agent
 from .api.app import create_app
 
@@ -43,6 +44,7 @@ def run_server():
     network = NetworkService(storage)
     calendar = CalendarService(cache, settings)
     tts = TTSService(settings)
+    camera = CameraService(settings)
 
     # Register
     registry = ServiceRegistry()
@@ -61,6 +63,7 @@ def run_server():
     registry.register(network)
     registry.register(calendar)
     registry.register(tts)
+    registry.register(camera)
 
     # Brain
     agent = Agent(llm, registry, settings)

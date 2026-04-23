@@ -1487,12 +1487,101 @@ function refreshAll() {
   fetchNotes();
 }
 
+// === Feed Tab (camera) ===
+
+async function checkFeedAvailable() {
+  try {
+    const res = await fetch("/api/feed/status");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.configured) {
+      document.getElementById("feed-tab-btn").style.display = "";
+    }
+  } catch {}
+}
+
+let feedConnected = false;
+
+function toggleFeed() {
+  if (feedConnected) {
+    disconnectFeed();
+  } else {
+    connectFeed();
+  }
+}
+
+function connectFeed() {
+  const pwInput = document.getElementById("feed-password");
+  const pw = pwInput.value;
+  if (!pw) {
+    pwInput.focus();
+    return;
+  }
+  const img = document.getElementById("feed-img");
+  const empty = document.getElementById("feed-empty");
+  const badge = document.getElementById("feed-status-badge");
+  const btn = document.getElementById("feed-connect-btn");
+  const fs = document.getElementById("feed-fullscreen-btn");
+
+  img.onerror = () => {
+    badge.textContent = "error";
+    badge.className = "badge badge-idle";
+    empty.textContent = "Connection failed. Wrong password or camera offline.";
+    empty.style.display = "";
+    img.style.display = "none";
+    img.src = "";
+    btn.textContent = "Connect";
+    fs.style.display = "none";
+    feedConnected = false;
+  };
+  img.onload = () => {
+    badge.textContent = "streaming";
+    badge.className = "badge badge-active";
+  };
+
+  img.src = `/api/feed/stream?token=${encodeURIComponent(pw)}&t=${Date.now()}`;
+  img.style.display = "";
+  empty.style.display = "none";
+  badge.textContent = "connecting...";
+  btn.textContent = "Disconnect";
+  fs.style.display = "";
+  feedConnected = true;
+}
+
+function disconnectFeed() {
+  const img = document.getElementById("feed-img");
+  const empty = document.getElementById("feed-empty");
+  const badge = document.getElementById("feed-status-badge");
+  const btn = document.getElementById("feed-connect-btn");
+  const fs = document.getElementById("feed-fullscreen-btn");
+
+  img.src = "";  // closes the stream
+  img.style.display = "none";
+  empty.textContent = "Disconnected.";
+  empty.style.display = "";
+  badge.textContent = "disconnected";
+  badge.className = "badge badge-idle";
+  btn.textContent = "Connect";
+  fs.style.display = "none";
+  feedConnected = false;
+}
+
+function toggleFeedFullscreen() {
+  const img = document.getElementById("feed-img");
+  if (!document.fullscreenElement) {
+    img.requestFullscreen?.();
+  } else {
+    document.exitFullscreen?.();
+  }
+}
+
 // === Init ===
 
 checkHealth();
 initWidgetResize();
 refreshAll();
 checkTerminalAvailable();
+checkFeedAvailable();
 
 // Polling intervals
 setInterval(checkHealth, 30000);

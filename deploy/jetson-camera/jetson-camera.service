@@ -1,0 +1,16 @@
+[Unit]
+Description=Jetson IMX219 MJPEG Camera Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=akshay
+WorkingDirectory=/opt/jetson-camera
+EnvironmentFile=-/opt/jetson-camera/.env
+ExecStart=/opt/jetson-camera/.venv/bin/python camera_service.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

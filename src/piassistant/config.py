@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     # Assistant
     assistant_name: str = "Bunty"
 
+    # Camera feed (MJPEG proxy — Jetson runs the camera service)
+    jetson_camera_url: str = ""       # e.g. "http://10.0.0.7:8001" — empty = feed disabled
+    feed_password: str = ""           # Required to view feed; empty = feed disabled
+
     # Terminal (SSH bridge to Mac Mini — optional)
     terminal_ssh_host: str = ""
     terminal_ssh_user: str = ""

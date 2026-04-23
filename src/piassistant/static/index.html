@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Assistant</title>
-<link rel="stylesheet" href="/static/css/dashboard.css?v=34">
+<link rel="stylesheet" href="/static/css/dashboard.css?v=35">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
@@ -21,6 +21,7 @@
     <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard</button>
     <button class="tab-btn" data-tab="chat" onclick="switchTab('chat')">Chat</button>
     <button class="tab-btn" data-tab="terminal" id="terminal-tab-btn" style="display:none" onclick="switchTab('terminal')">Terminal</button>
+    <button class="tab-btn" data-tab="feed" id="feed-tab-btn" style="display:none" onclick="switchTab('feed')">Feed</button>
   </div>
   <div class="header-actions">
     <button id="voice-resp-btn" onclick="toggleVoiceResponse()" title="Toggle voice responses">&#128264; Voice</button>
@@ -179,13 +180,30 @@
   </div>
 </div>
 
+<div id="tab-feed" class="tab-pane">
+  <div id="feed-section">
+    <div id="feed-header">
+      <h2>Feed <span class="badge badge-idle" id="feed-status-badge">disconnected</span></h2>
+      <div class="feed-actions">
+        <input type="password" id="feed-password" placeholder="Password" style="width:120px;padding:4px 8px;background:var(--bg);border:1px solid #ffffff20;border-radius:6px;color:var(--text);font-size:0.75rem">
+        <button id="feed-fullscreen-btn" onclick="toggleFeedFullscreen()" style="display:none">Fullscreen</button>
+        <button id="feed-connect-btn" onclick="toggleFeed()">Connect</button>
+      </div>
+    </div>
+    <div id="feed-container">
+      <div id="feed-empty" class="empty-state" style="padding:40px;text-align:center">Enter password and click Connect to view camera feed.</div>
+      <img id="feed-img" style="display:none;max-width:100%;max-height:100%;border-radius:8px" alt="camera feed">
+    </div>
+  </div>
+</div>
+
 <!-- Timer alert overlay -->
 <div id="timer-alert">
   <div id="timer-alert-text"></div>
   <button onclick="dismissTimerAlert()">Dismiss</button>
 </div>
 
-<script src="/static/js/dashboard.js?v=27"></script>
+<script src="/static/js/dashboard.js?v=28"></script>
 
 </body>
 </html>

@@ -40,6 +40,7 @@ def create_app(registry: ServiceRegistry, agent: Agent, settings: Settings) -> F
     from .routes_hooks import router as hooks_router
     from .routes_terminal import router as terminal_router
     from .routes_voice import router as voice_router
+    from .routes_feed import router as feed_router
 
     app.include_router(assistant_router, prefix="/api")
     app.include_router(pico_router, prefix="/api/pico")
@@ -48,6 +49,7 @@ def create_app(registry: ServiceRegistry, agent: Agent, settings: Settings) -> F
     app.include_router(hooks_router, prefix="/api/hooks")
     app.include_router(terminal_router, prefix="/api")
     app.include_router(voice_router, prefix="/api")
+    app.include_router(feed_router, prefix="/api")
 
     # Serve static JS/CSS files
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
